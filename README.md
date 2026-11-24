@@ -29,7 +29,7 @@ Microscope camera viewer & image analyzer — a single HTML file that runs in an
 
 ## Offline use
 
-Unzip `downloads/CxM_ImageViewer_v111_full_20261124.zip`, double-click `start_viewer.bat`.
+Unzip `downloads/CxM_ImageViewer_v111_full_20261125.zip`, double-click `start_viewer.bat`.
 Served on `http://127.0.0.1:8642/` via Windows built-in PowerShell (no Python required).
 Opening `index.html` directly (file://) works for saved-image analysis only — browsers disable the camera API on file://.
 
