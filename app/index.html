@@ -1,0 +1,3263 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>CxM Image</title>
+<meta http-equiv="Cache-Control" content="no-store">
+<style>
+  :root { color-scheme: dark; }
+  body { background:#111; color:#ddd; font-family:system-ui,"Segoe UI",sans-serif; margin:0;
+         height:100vh; overflow:hidden; display:flex; flex-direction:column; }
+  header { padding:8px 12px; background:#1b1b1b; border-bottom:1px solid #333;
+           display:flex; flex-direction:column; align-items:flex-start; gap:8px;
+           flex:none; }
+  .hrow { display:flex; flex-wrap:wrap; gap:8px; align-items:stretch; width:100%; }
+  header h1 { font-size:14px; margin:0 4px; font-weight:600; align-self:center;
+              white-space:nowrap; flex:none; }
+  .titlebox { display:flex; flex-direction:column; align-self:center; margin:0 4px; }
+  .titlebox h1 { margin:0; }
+  #ver { font-size:10px; color:#777; letter-spacing:1px; padding-left:1px; }
+  .grp { display:inline-flex; flex-direction:column; gap:4px;
+         border:1px solid #3a3a3a; border-radius:8px; padding:5px 8px 8px;
+         min-height:78px; box-sizing:border-box; }
+  .capbtns { display:flex; gap:6px; align-items:flex-start; flex:none; padding-top:2px; }
+  .cap { font-size:13px; font-weight:bold; color:#8fb48f; letter-spacing:1px; padding-left:2px; }
+  .row { display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
+  .field { display:flex; flex-direction:column; gap:2px; }
+  .flab { font-size:11px; color:#8fb48f; letter-spacing:.5px; padding-left:2px; }
+  select,button { background:#2a2a2a; color:#ddd; border:1px solid #444; border-radius:6px;
+                  padding:6px 10px; font-size:13px; cursor:pointer; }
+  button:hover { background:#383838; }
+  button.on { background:#2f5d3a; border-color:#4a8a5a; }
+  #m-dist, #lplot, #m-area, #m-part, #m-pt, #m-ang, #m-shp, #onlyimg, #showall { height:34px; min-width:68px; padding:0 10px; font-size:11px;
+                                       border-radius:8px; align-self:center; white-space:nowrap; }
+  #shot2 { width:136px; height:68px; padding:0; border-radius:10px; align-self:center; font-size:12px; line-height:1.4; }
+  #shot { font-size:14px; line-height:1.5; }  // 11-24: サイズはsqbtn(動画と同じ84x66)へ統一
+  #m-dist.on, #lplot.on, #m-area.on, #cmpbtn.on { background:#2f5d3a; border-color:#4a8a5a; }
+  #stage { position:relative; display:flex; justify-content:center; align-items:center;
+           flex:1 1 auto; min-height:0; overflow:hidden; background:#000; }
+  #video, #fileimg { max-width:100%; max-height:100%; transform-origin:center; }
+  #fileimg { display:none; }
+  .tabs { display:flex; gap:6px; margin-top:5px; }
+  .tabs button { padding:3px 10px; font-size:12px; }
+  #fx { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); display:none; }
+  #cmpcv { position:absolute; left:0; top:0; width:100%; height:100%; display:none; background:#000; }
+  #plotpanel { position:absolute; left:12px; bottom:12px; background:rgba(0,0,0,.85);
+               border:1px solid #444; border-radius:8px; padding:6px 8px; display:none; }
+  #plothead { display:flex; justify-content:space-between; align-items:center;
+              font-size:11px; color:#9ab; margin-bottom:4px; }
+  #plotclose { background:none; border:none; color:#9ab; font-size:14px; padding:0 4px; }
+  #areapanel { position:absolute; right:12px; top:12px; width:360px; background:rgba(0,0,0,.85);
+               border:1px solid #444; border-radius:8px; padding:8px 10px; display:none; }
+  #areahand { display:flex; justify-content:space-between; align-items:center;
+              font-size:11px; color:#9ab; margin-bottom:6px; }
+  #areaclose { background:none; border:none; color:#9ab; font-size:14px; padding:0 4px; }
+  #plothead, #areahand { cursor:move; touch-action:none; user-select:none; }
+  .arow { display:flex; align-items:center; gap:6px; margin-bottom:5px; }
+  .alab { font-size:11px; color:#9ab; }
+  .aval { font-size:11px; color:#cde; min-width:32px; }
+  #areaStats { font-family:monospace; font-size:12px; white-space:pre; color:#cde; margin:6px 0 4px; }
+  input[type=range] { accent-color:#4a8a5a; }
+  #overlay { position:absolute; inset:0; pointer-events:none; }
+  #status { padding:6px 16px; font-size:12px; color:#9a9; background:#161616;
+            border-top:1px solid #333; }
+  #gallery { display:flex; gap:8px; padding:8px 16px; flex-wrap:wrap;
+             max-height:106px; overflow-y:auto; flex:none; }
+  #gallery img { height:90px; border:1px solid #444; border-radius:4px; cursor:pointer; }
+  .hint { color:#888; font-size:12px; }
+  .sqbtn { min-width:84px; min-height:66px; font-size:14px; line-height:1.6; align-self:center; }
+  #tincbtn { width:84px; padding:0; font-size:13px; }
+  .numin { width:56px; background:#2a2a2a; color:#ddd; border:1px solid #444; border-radius:6px;
+           padding:3px 6px; font-size:12px; }  // 「インターバル」6字を84px枠に収める(動画と同サイズ)
+  .pickbtn { height:34px; min-width:118px; font-size:11px; align-self:center; white-space:nowrap; }
+  .pickmenu { position:fixed; flex-direction:column; gap:5px; background:#242424;
+              border:1px solid #4a4a4a; border-radius:8px; padding:8px; z-index:60;
+              box-shadow:0 6px 18px rgba(0,0,0,.5); }
+  .pickmenu button { min-width:210px; height:30px; font-size:12px; text-align:left; }
+  #condbtn { width:110px; height:68px; padding:0; border-radius:10px; align-self:center; font-size:12px; line-height:1.4; }
+  #condmenu, #shpmenu { position:fixed; flex-direction:column; gap:6px; background:#242424;
+              border:1px solid #4a4a4a; border-radius:8px; padding:8px; z-index:60;
+              box-shadow:0 6px 18px rgba(0,0,0,.5); }
+  #condmenu button, #shpmenu button { min-width:150px; height:34px; font-size:12px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="hrow">
+    <div class="titlebox">
+      <h1>CxM Image</h1>
+      <span id="ver"></span>
+      <div class="tabs">
+        <button id="modeLive" class="on" title="カメラ画像を解析">リアルタイム解析</button>
+        <button id="modeFile" title="画像ファイルを読み込んで解析">画像解析</button>
+      </div>
+    </div>
+  <div class="grp">
+    <span class="cap">カメラ動作</span>
+    <div class="row">
+      <button id="devbtn" class="pickbtn" title="カメラ選択 — 一覧から選びます">カメラ ▾</button>
+      <button id="resbtn" class="pickbtn" title="解像度選択">3840×2160 ▾</button>
+      <button id="chanbtn" class="pickbtn" title="色チャンネル・指標の選択">ch: RGB ▾</button>
+    </div>
+  </div>
+  <div class="grp">
+    <span class="cap">画面表示</span>
+    <div class="row">
+      <button id="rotbtn" class="pickbtn" title="回転・反転・倍率・エッジのメニューを開く">回転・倍率 ▾</button>
+      <button id="gridbtn" class="pickbtn" title="グリッド表示・色・細かさのメニューを開く">グリッド ▾</button>
+      <button id="tonebtn" class="pickbtn" title="補正 — ガンマ・コントラスト・シャープ(表示・撮影・解析に共通適用)">補正 ▾</button>
+    </div>
+  </div>
+  <div class="capbtns">
+  <button id="shot" class="sqbtn" title="撮影 (Sキー) — 映像のみ保存">📷<br>撮影(S)</button>
+  <button id="recbtn" class="sqbtn" title="動画撮影メニュー — 開始遅延・録画時間の設定と開始 (Vキー)">🎬<br>動画 ▾</button>
+  <button id="tincbtn" class="sqbtn" title="インターバル撮影メニュー — 画像間隔撮影とタイムラプス撮影の設定・開始">⏱<br>インターバル ▾</button>
+  <button id="shot2" title="解析結果の保存 (Shift+Sキー) — 解析描画込みPNG+結果テキスト出力">💾<br>解析結果の<br>保存(⇧S)</button>
+  <button id="condbtn" title="解析条件のインポート・エクスポート、リセットのメニューを開く">⚙<br>解析条件<br>リセット</button>
+  </div>
+  </div>
+  <div class="hrow">
+  <button id="calbtn" class="sqbtn" title="較正メニュー — 基準長設定(C)・測定消去・較正線表示">📐<br>較正 ▾</button>
+  <div class="grp">
+    <span class="cap">表示項目の設定</span>
+    <div class="row">
+      <button id="basebtn" class="pickbtn" title="スケール・日時・ルーラー・サンプル名の表示ON/OFFとサンプル名設定">表示ON/OFF ▾</button>
+    </div>
+  </div>
+  <div class="grp">
+    <span class="cap">解析結果の表示</span>
+    <div class="row">
+      <button id="onlyimg" title="画像のみ — 解析結果の描画を非表示">画像のみ</button>
+      <button id="showall" title="解析を含めて表示 — 解析結果の描画を再開">解析を含める</button>
+    </div>
+  </div>
+  <div class="grp">
+    <span class="cap">幾何測定</span>
+    <div class="row">
+      <button id="m-pt" title="点分析 (Pキー) — 基準点からの相対座標・ベクトルを表示">◎ 点分析(P)</button>
+      <button id="m-dist" class="on" title="2点間距離 (Mキー)">📏 2点間距離(M)</button>
+      <button id="m-ang" title="角度 (Nキー) — 3点A→頂点B→Cの順にクリックし、頂点の内角を計測">∠ 角度(N)</button>
+      <button id="m-shp" title="形状測定 (Gキー) — 円:円周上3点 / 矩形・正方形:対角2点 / 領域:四頂点4点">⬠ 形状測定(G)</button>
+    </div>
+  </div>
+  <div class="grp">
+    <span class="cap">画像解析</span>
+    <div class="row">
+      <button id="lplot" title="線分析 (Lキー)">📈 線分析(L)</button>
+      <button id="m-area" title="面分析 (Aキー) — ROI内の指定色画素をカウント">▦ 面分析(A)</button>
+      <button id="m-part" title="粒子解析 (Kキー) — 粒子数・粒子径・ヒストグラム(ImageJ風)">◉ 粒子解析(K)</button>
+      <button id="cmpbtn" title="比較 — 現在のフレームを固定して左(Reference)に表示、右にライブ(Sample)、差分ブロックをマーク">🔀 比較 ▾</button>
+    </div>
+  </div>
+  </div>
+</header>
+
+<div id="stage">
+  <video id="video" autoplay playsinline muted></video>
+  <img id="fileimg" alt="">
+  <input type="file" id="fileopen" accept="image/*" style="display:none">
+  <canvas id="fx"></canvas>
+  <canvas id="overlay"></canvas>
+  <canvas id="cmpcv"></canvas>
+  <div id="plotpanel">
+    <div id="plothead"><span>線分析 — 輝度プロファイル</span><span class="edctl" title="プロファイル勾配がこの値以上の縁をエッジとして数値表示します(0-255域)">エッジ閾値<input id="edthr" type="number" min="1" max="255" step="1" value="12" style="width:46px;height:20px;font-size:11px;background:#1b1b1b;color:#ddd;border:1px solid #444;border-radius:4px"></span><button id="plotclose">×</button></div>
+    <canvas id="plotc" width="460" height="210"></canvas>
+  </div>
+  <div id="areapanel">
+    <div id="areahand"><span id="areatitle">面分析 — 指定色ピクセルカウント</span><button id="areaclose">×</button></div>
+    <div id="cntctrl">
+      <div class="arow"><button id="pickcolor" style="padding:3px 8px;font-size:11px" title="次クリックで画像上の色を目標に指定">色指定</button>
+        <span id="cntswatch" style="width:16px;height:16px;border:1px solid #666;border-radius:3px;display:inline-block;background:#222"></span>
+        <span class="alab">許容差</span><input id="cnttol" type="range" min="5" max="200" step="5" value="60" style="width:90px"><span id="cnttolv" class="aval">60</span></div>
+      <pre id="areaStats">ROI未指定: 左クリックで頂点→右クリックで確定 → 確定後に色をクリック指定</pre>
+      <div class="hint" style="font-size:10px">左クリック=頂点追加 / 右クリック=確定 / Shift+クリック=色指定 / 頂点ドラッグ=移動 / Aキー=切入</div>
+    </div>
+    <div id="partctrl" style="display:none">
+    <div class="arow"><span class="alab">閾値</span><input id="thr" type="range" min="1" max="254" value="128"><span id="thrv" class="aval">128</span>
+      <button id="autothr" style="padding:3px 8px;font-size:11px" title="Otsuの自動閾値">自動閾値</button></div>
+    <div class="arow"><span class="alab">区分</span><select id="segmode" title="粒子の抽出方法: 輝度閾値(明/暗)または色相(HSV)" style="width:64px;font-size:11px"><option value="lum">輝度</option><option value="hue">色相</option></select>
+      <span class="alab">色相°</span><input id="huec" type="range" min="0" max="360" step="5" value="210" style="width:80px"><span id="huecv" class="aval">210</span>
+      <span class="alab">許容°</span><input id="huetol" type="range" min="5" max="180" step="5" value="40" style="width:60px"><span id="huetolv" class="aval">40</span>
+      <span class="alab">彩度≥%</span><input id="satmin" type="range" min="0" max="90" step="5" value="25" style="width:50px"><span id="satminv" class="aval">25</span></div>
+    <div class="arow"><button id="thrp" class="on" style="padding:3px 8px;font-size:11px">明るい画素</button>
+      <button id="thrd" style="padding:3px 8px;font-size:11px">暗い画素</button>
+      <span class="alab">最小面積px²</span><input id="minarea" type="range" min="5" max="1000" step="5" value="50" style="width:90px"><span id="minareav" class="aval">50</span></div>
+    <div class="arow"><span class="alab">背景補正px</span><input id="bgrad" type="range" min="0" max="60" step="2" value="0" style="width:70px"><span id="bgradv" class="aval">0</span>
+      <label class="alab" style="display:flex;align-items:center;gap:3px"><input type="checkbox" id="wtr">接触分離</label>
+      <span class="alab">円形度%</span><input id="cirmin" type="range" min="0" max="100" step="5" value="0" style="width:50px"><span id="cirminv" class="aval">0</span></div>
+    <pre id="partStats">ROI未指定: 左クリックで頂点→右クリックで確定</pre>
+    <canvas id="histc" width="430" height="120" style="width:100%;background:#151515;border:1px solid #333;border-radius:4px"></canvas>
+    <div class="hint" style="font-size:10px">左クリック=頂点追加 / 右クリック=確定 / 頂点ドラッグ=移動 / Kキー=切入</div>
+    </div>
+  </div>
+</div>
+<div id="condmenu" style="display:none">
+  <button id="condexp" title="較正値・解析条件・表示切替をJSONファイルへ保存">条件エクスポート</button>
+  <button id="condimp" title="条件JSONファイルを読み込んで適用">条件インポート</button>
+  <button id="repexp" title="スナップショット+解析結果+解析条件(較正含む)を1枚のHTMLレポートとして保存">レポート出力</button>
+  <button id="areset" title="測定・分析・解析結果とROIをすべて消去(較正は保持)">解析リセット</button>
+</div>
+<div id="shpmenu" style="display:none">
+  <button data-shp="circle">円 — 円周上3点</button>
+  <button data-shp="rect2">矩形 — 対角2点</button>
+  <button data-shp="square2">正方形 — 対角2点</button>
+  <button data-shp="quad">領域 — 頂点4点</button>
+  <button id="shpoff">形状測定を終了</button>
+</div>
+<div id="devmenu" class="pickmenu" style="display:none"></div>
+<div id="resmenu" class="pickmenu" style="display:none"></div>
+<div id="chanmenu" class="pickmenu" style="display:none"></div>
+<div id="calmenu" class="pickmenu" style="display:none">
+  <button id="cm-set">基準長設定 (C)</button>
+  <button id="cm-clear">測定消去</button>
+  <button id="cm-show">較正線を表示</button>
+</div>
+<div id="tonemenu" class="pickmenu" style="display:none">
+  <button id="toneauto" title="全自動補正 — ホワイトバランス(グレイワールド)、ガンマ(平均輝度)、コントラスト(百分位ストレット)、ノイズ低減(σ推定)、フレーム平均(静止かつノイズ高のときのみ)を一括設定">全自動補正</button>
+  <div class="arow"><span class="alab">ガンマ</span><input id="tgam" type="range" min="20" max="500" step="5" value="100" style="width:120px"><span id="tgamv" class="aval">1.00</span></div>
+  <div class="arow"><span class="alab">コントラスト</span><input id="tcon" type="range" min="20" max="300" step="5" value="100" style="width:120px"><span id="tconv" class="aval">1.00</span></div>
+  <div class="arow"><span class="alab">シャープ</span><input id="tshp" type="range" min="0" max="200" step="5" value="0" style="width:120px"><span id="tshpv" class="aval">0.00</span></div>
+  <div class="arow"><span class="alab">ノイズ低減</span><button id="n0" style="padding:3px 10px">切</button><button id="n1" style="padding:3px 10px" title="3x3中央値フィルタ: 粒状ノイズに強い">中央値</button><button id="n2" style="padding:3px 10px" title="3x3ガウシアン: 滑らかな平滑">ガウシアン</button></div>
+  <div class="arow"><span class="alab">フレーム平均</span><select id="tavg" title="時間方向にNフレームの移動平均。静止被写体のSN比向上・粒子誤検出低減(係数1/NのEMA)">
+    <option value="0">切</option><option value="2">×2</option><option value="4">×4</option><option value="8">×8</option><option value="16">×16</option>
+  </select></div>
+  <div class="arow"><span class="alab">WB R</span><input id="wbr" type="range" min="50" max="200" step="5" value="100" style="width:120px"><span id="wbrv" class="aval">1.00</span></div>
+  <div class="arow"><span class="alab">WB G</span><input id="wbg" type="range" min="50" max="200" step="5" value="100" style="width:120px"><span id="wbgv" class="aval">1.00</span></div>
+  <div class="arow"><span class="alab">WB B</span><input id="wbb" type="range" min="50" max="200" step="5" value="100" style="width:120px"><span id="wbbv" class="aval">1.00</span></div>
+  <button id="wbauto" title="グレイワールド自動白色補正: 現フレームの各チャンネル平均が等しくなるようゲインを設定">自動ホワイトバランス</button>
+  <button id="toneset">補正をリセット</button>
+</div>
+<div id="cmpmenu" class="pickmenu" style="display:none">
+  <button id="cmpcap" title="現在のフレーム(補正適用後)を比較基準として固定し、比較を開始">現在フレームを固定(開始)</button>
+  <button id="cmpfile" title="画像ファイルを読み込み比較基準(Reference)に設定。現行解像度に引き伸ばしてブロックグリッドを揃えます">基準をファイルから読み込み</button>
+  <button id="cmsoff">比較を終了</button>
+  <div class="arow"><span class="alab">差分閾値</span><input id="cmthr" type="range" min="5" max="255" step="5" value="40" style="width:120px"><span id="cmthrv" class="aval">40</span></div>
+</div>
+<div id="rotmenu" class="pickmenu" style="display:none">
+  <button id="rot" title="回転 (Rキー) — 90°ずつ右回転">回転(R) 0°</button>
+  <button id="mirror" title="左右反転 — 顕微鏡像の向き補正">反転</button>
+  <div class="arow"><span class="alab">倍率</span><select id="zoom" title="デジタルズーム">
+    <option value="1">×1</option><option value="2">×2</option>
+    <option value="4">×4</option><option value="8">×8</option>
+  </select></div>
+  <button id="edge" title="エッジ検出 — 輝度ラプラシアン強調のON/OFF">エッジ</button>
+</div>
+<div id="gridmenu" class="pickmenu" style="display:none">
+  <button id="grid" title="グリッド表示のON/OFF">グリッド表示</button>
+  <div class="arow"><span class="alab">色</span><input id="gridcolor" type="color" value="#ffee55" title="グリッド色"
+    style="width:34px;height:26px;border:1px solid #444;border-radius:6px;background:#2a2a2a;padding:2px;cursor:pointer"></div>
+  <div class="arow"><span class="alab">細かさ</span><select id="gridstep" title="グリッド間隔">
+    <option value="px">50px(画面)</option>
+    <option value="auto">自動</option>
+  </select></div>
+</div>
+<div id="recmenu" class="pickmenu" style="display:none">
+  <button id="rec" title="動画撮影 (Vキー) — 遅延後に録画開始、時間で自動停止。カウントダウン中は再クリックで取消、録画中は再クリックで停止">🎬 動画撮影(V)</button>
+  <div class="arow"><span class="alab">開始遅延</span><select id="recdelay" title="録画開始遅延" style="width:90px;font-size:11px">
+    <option value="0">即時</option><option value="3" selected>3秒後</option><option value="10">10秒後</option></select></div>
+  <div class="arow"><span class="alab">録画時間</span><select id="reclen" title="録画時間(任意は再クリックで停止)" style="width:90px;font-size:11px">
+    <option value="10">10秒</option><option value="30" selected>30秒</option><option value="0">任意</option></select></div>
+  <button id="recbake" title="測定・ROI・統計ブロック・プロット・スケールバー等を動画へインポーズ。OFFなら映像のみ">解析を含めて録画</button>
+</div>
+<div id="tincmenu" class="pickmenu" style="display:none">
+  <div class="arow"><span class="alab">画像間隔</span><input id="tintv" class="numin" type="number" min="2" max="3600" step="1" value="10" title="撮影間隔(秒)">秒ごとに<input id="tincnt" class="numin" type="number" min="0" max="10000" step="1" value="10" title="撮影枚数(0=無制限)">枚撮影</div>
+  <button id="tinc" title="画像間隔撮影 — スケール・日時を焼き込んだ静止画を決まった間隔で個別PNGとして自動保存。ブラウザの連続ダウンロードを許可してください">画像間隔撮影を開始</button>
+  <div class="arow"><span class="alab">タイムラプス</span><input id="taltotal" class="numin" type="number" min="1" max="1440" step="1" value="60" title="合計の録画時間(分)">分を<input id="taln" class="numin" type="number" min="1" max="600" step="1" value="60" title="完成動画の長さ(秒。この時間に短縮再生)">秒に短縮</div>
+  <div id="talinfo" style="font-size:10px;color:#9a9"></div>
+  <button id="talbtn" title="タイムラプス撮影 — 指定時間を撮影し、30fps固定で短縮再生する1本のWebM動画に合成(撮影間隔は倍速から自動)">タイムラプス撮影を開始</button>
+</div>
+<div id="basemenu" class="pickmenu" style="display:none">
+  <button id="scale" class="on" title="スケールバー表示のON/OFF">スケール</button>
+  <button id="tstamp" class="on" title="日時表示のON/OFF">日時</button>
+  <button id="ruler" class="on" title="画像縁に目盛り: 未較正=px, 較正後=mm">ルーラー</button>
+  <button id="tsamp" class="on" title="サンプル名表示のON/OFF">サンプル名</button>
+  <div class="arow"><span class="alab">サンプル名</span><input id="sampname" type="text" placeholder="例: PCB-Cu-01" size="14" spellcheck="false" style="background:#2a2a2a;color:#ddd;border:1px solid #444;border-radius:6px;padding:5px 10px;font-size:13px"></div>
+</div>
+<input id="condfile" type="file" accept=".json,application/json" style="display:none">
+<input id="cmppicfile" type="file" accept="image/*" style="display:none">
+<div id="status">未接続</div>
+<div id="gallery"></div>
+
+<svg width="0" height="0" style="position:absolute">
+  <filter id="fR"><feColorMatrix type="matrix" values="1 0 0 0 0  1 0 0 0 0  1 0 0 0 0  0 0 0 1 0"/></filter>
+  <filter id="fG"><feColorMatrix type="matrix" values="0 1 0 0 0  0 1 0 0 0  0 1 0 0 0  0 0 0 1 0"/></filter>
+  <filter id="fB"><feColorMatrix type="matrix" values="0 0 1 0 0  0 0 1 0 0  0 0 1 0 0  0 0 0 1 0"/></filter>
+  <filter id="fEdge" x="0" y="0" width="100%" height="100%">
+    <feColorMatrix type="matrix" values=".33 .5 .16 0 0  .33 .5 .16 0 0  .33 .5 .16 0 0  0 0 0 1 0"/>
+    <feConvolveMatrix order="3" kernelMatrix="0 -1 0  -1 4  -1 0 -1 0" edgeMode="duplicate" preserveAlpha="0"/>
+  </filter>
+</svg>
+
+<script>
+// ---- バージョン ----
+const APP_VER = 'Version 1.11 (2026-11-24)';
+document.getElementById('ver').textContent = APP_VER;
+
+const $ = id => document.getElementById(id);
+const video = $('video'), overlay = $('overlay'), status = $('status');
+let stream = null, rot = 0, mirrored = false, zoom = 1, gridOn = false, fpsCount = 0, lastFpsT = 0;
+let gridColor = localStorage.getItem('grid color') || '#ffee55';
+let deviceSel = localStorage.getItem('cam deviceId') || '';  // ボタンメニューでのカメラ選択
+let resSel = localStorage.getItem('res') || '3840x2160';
+let camsList = [];
+
+async function listDevices() {
+  const devs = await navigator.mediaDevices.enumerateDevices();
+  camsList = devs.filter(d => d.kind === 'videoinput');
+  // 既定: ラベルにH1612(顕微鏡) > 記憶選択 > 先頭(顕微鏡ビューアなのでH1612優先)
+  const saved = localStorage.getItem('cam deviceId');
+  const pref = camsList.find(c => /h1612/i.test(c.label)) || camsList.find(c => c.deviceId === saved);
+  if (!deviceSel || !camsList.some(c => c.deviceId === deviceSel)) {
+    const pick = pref || camsList[0];
+    if (pick) { deviceSel = pick.deviceId; localStorage.setItem('cam deviceId', deviceSel); }
+  }
+  updateDevBtn();
+  // 権限前の列挙(無ラベル)で誤カメラを開いていた場合、1度だけ正しく張替
+  if (pref && stream && deviceSel !== pref.deviceId && !autoSwitched) {
+    autoSwitched = true; deviceSel = pref.deviceId; localStorage.setItem('cam deviceId', deviceSel); updateDevBtn(); start();
+  }
+}
+function updateDevBtn() {
+  const c = camsList.find(c2 => c2.deviceId === deviceSel);
+  const t = c ? (c.label || 'カメラ') : 'カメラ';
+  $('devbtn').textContent = (t.length > 16 ? t.slice(0, 15) + '…' : t) + ' ▾';
+  $('devbtn').title = t;
+}
+let autoSwitched = false;
+
+// フレーム平均蓄積状態(GL FBO ping-pong)。start()より前に宣言が必要(TDZ回避)
+let accW = 0, accH = 0, accFBO = [null, null], accTEX = [null, null], accCur = 0, accInit = false, accLast = -1;
+// 比較モード状態(④): 左=固定(Reference) / 右=ライブ(Sample) / 差分ブロックマーク
+let cmpOn = false, cmpThr = 40, cmpRefCv = null, cmpRefLum = null, cmpRefW = 0, cmpRefH = 0;
+let cmpMarks = [], cmpCount = 0, cmpLastDiff = 0;
+async function start() {
+  if (mediaMode !== 'live') {
+    mediaMode = 'live'; fi.style.display = 'none'; fi.style.visibility = '';
+    video.style.display = ''; setTabs();
+  }
+  stop();
+  accInit = false; accLast = -1;  // ストリーム切替で蓄積を初期化(前ストリームの残像を混ぜない)
+  const [w, h] = resSel.split('x').map(Number);
+  const deviceId = deviceSel || undefined;
+  const devSel = deviceId ? { deviceId: { exact: deviceId } } : {};
+  const mk = (mode) => ({
+    video: { ...devSel, width: mode(w), height: mode(h), frameRate: { ideal: 30 } },
+    audio: false
+  });
+  try {
+    try {
+      // 4K指定時はexactで押す（UVCのMJPG 4Kモードを引き出す）
+      if (w >= 3840) stream = await navigator.mediaDevices.getUserMedia(mk(v => ({ exact: v })));
+      else throw new Error('skip exact');
+    } catch (e) {
+      stream = await navigator.mediaDevices.getUserMedia(mk(v => ({ ideal: v })));
+    }
+  } catch (e) {
+    status.textContent = '取得失敗: ' + e.message +
+      '（他のアプリがカメラ使用中かも）'; return;
+  }
+  video.srcObject = stream;
+  if (!video._gridstepHook) {
+    video._gridstepHook = true;
+    // videoWidthはメタデータ読込後に確定するので、その時点で選択肢を再生成する
+    video.addEventListener('loadedmetadata', () => { populateGridSteps(); if (fxNeeded()) setEdgeMode(); });
+  }
+  await listDevices();
+  populateGridSteps();
+  lastFpsT = performance.now(); fpsCount = 0;
+  requestAnimationFrame(fpsLoop); countFrames();
+}
+
+function stop() {
+  if (recCountT) { clearInterval(recCountT); recCountT = null; $('rec').classList.remove('on'); $('rec').textContent = '🎬 動画撮影(V)'; }
+  if (rec) { if (recStopT) { clearTimeout(recStopT); recStopT = null; } recStopNow(); }
+  if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+  video.srcObject = null;
+  status.textContent = '未接続';
+}
+
+// ---- 画像ソース切替: リアルタイム解析(カメラ) / 画像解析(読み込み画像) ----
+let mediaMode = 'live';
+let fileName = '';
+const fi = $('fileimg');
+function srcEl() { return mediaMode === 'live' ? video : fi; }
+function srcW() { return mediaMode === 'live' ? video.videoWidth : (fi.naturalWidth || 0); }
+function srcH() { return mediaMode === 'live' ? video.videoHeight : (fi.naturalHeight || 0); }
+function srcOK() { return srcW() > 0 && srcH() > 0; }
+function setTabs() {
+  $('modeLive').classList.toggle('on', mediaMode === 'live');
+  $('modeFile').classList.toggle('on', mediaMode === 'file');
+}
+function clearOverlays() {
+  areas = []; livePts = []; dragPt = null; areaHoverPt = null;
+  meas = []; lineSeg = null; lineProf = null; lineEdgeX = null; pending = hover = null; areaComps = [];
+  cntResult = null; cntTarget = null; pickArmed = false;
+}
+function enterFileMode(name) {
+  // 保存済み画像にはスケールバーが焼き込まれているため、解析時は自動OFF(二重描画の防止)。ボタンでONにもできる。
+  // 実時間表示からの切替時のみ元の状態を記憶(file→file連続読込では上書きしない)。
+  if (mediaMode !== 'file') scaleBarLiveState = scaleBarOn;
+  mediaMode = 'file'; fileName = name;
+  if (stream) stop();
+  scaleBarOn = false; $('scale').classList.remove('on');
+  clearOverlays();
+  video.style.display = 'none'; video.style.visibility = '';
+  fi.style.display = 'block';
+  setTabs(); applyTransform(); populateGridSteps();
+  if (fxNeeded()) setEdgeMode();
+  areaStats();
+  status.textContent = `画像解析: ${name} ${fi.naturalWidth}×${fi.naturalHeight}` +
+    (mediaMode && mmPerPx() ? '' : ' (画像内の基準長さでスケール設定可能)');
+}
+function enterLiveMode() {
+  mediaMode = 'live'; fileName = '';
+  scaleBarOn = scaleBarLiveState; $('scale').classList.toggle('on', scaleBarOn);
+  fi.style.display = 'none'; fi.style.visibility = '';
+  video.style.display = '';
+  clearOverlays(); setTabs(); applyTransform(); areaStats();
+  if (fxNeeded()) setEdgeMode();
+  if (!stream) start();
+}
+$('modeLive').onclick = () => { if (mediaMode !== 'live') enterLiveMode(); };
+$('modeFile').onclick = () => $('fileopen').click();
+$('fileopen').onchange = async e => {
+  const f = e.target.files && e.target.files[0];
+  if (!f) return;
+  try {
+    if (fi._url) URL.revokeObjectURL(fi._url);
+    fi._url = URL.createObjectURL(f);
+    fi.src = fi._url;
+    await fi.decode();
+  } catch (err) { status.textContent = '画像読み込み失敗: ' + err.message; return; }
+  enterFileMode(f.name);
+  $('fileopen').value = '';
+};
+
+function applyFilters() {  // チャンネル: 画面はCSS(SVG filter)。fx(GL)側で処理する場合はCSSを空にする
+  const cf = { r: 'url(#fR)', g: 'url(#fG)', b: 'url(#fB)' }[chan] || '';
+  video.style.filter = fxNeeded() ? '' : cf;
+  fi.style.filter = fxNeeded() ? '' : cf;
+}
+let chan = localStorage.getItem('channel') || 'all';
+let edgeOn = localStorage.getItem('edge') === 'on';
+const CHAN_LABELS = { all: 'RGB', r: 'Rのみ', g: 'Gのみ', b: 'Bのみ',
+  rg: 'R+G(HumanEye)', renh: 'R-(G+B)(RedEnh)', genh: 'G/(R+G+B)(GreenEnh)', exg: '2G-(R+B)(ExG)',
+  ridx: 'R/(R+G)(RedIdx)', gidx: 'G/(G+B)(GreenIdx)', bidx: 'B/(R+G)(BlueIdx)', pgray: '(R+2G+B)/4(PseudoGray)' };
+const CHAN_CODE = { all: 0, r: 1, g: 2, b: 3, rg: 4, renh: 5, genh: 6, exg: 7, ridx: 8, gidx: 9, bidx: 10, pgray: 11 };
+const FXCHAN = new Set(['rg', 'renh', 'genh', 'exg', 'ridx', 'gidx', 'bidx', 'pgray']);  // CSSでは表現できずGL側で計算
+function updateChanBtn() { $('chanbtn').textContent = 'ch: ' + (CHAN_LABELS[chan] || 'RGB') + ' ▾'; }
+updateChanBtn();
+$('edge').classList.toggle('on', edgeOn);
+$('edge').onclick = () => { edgeOn = !edgeOn; $('edge').classList.toggle('on', edgeOn);
+                            localStorage.setItem('edge', edgeOn ? 'on' : 'off'); setEdgeMode(); };
+
+// ---- 補正(ノイズ低減/ガンマ/コントラスト/シャープ): 表示GL・スナップショット・解析読取りの全経路に同一適用。順序: ノイズ低減→ガンマ→コントラスト→unsharp→チャンネル ----
+let tone = { gamma: 1, contrast: 1, sharp: 0, noise: 0, avg: 0, wb: [1, 1, 1] };
+const AVG_OK = [0, 2, 4, 8, 16];
+const wbClamp = v => Math.max(0.5, Math.min(2, +v || 1));
+try { const t = JSON.parse(localStorage.getItem('tone') || 'null');
+      if (t && typeof t === 'object') tone = { gamma: +t.gamma || 1, contrast: +t.contrast || 1, sharp: +t.sharp || 0, noise: Math.min(2, +t.noise || 0), avg: AVG_OK.includes(+t.avg) ? +t.avg : 0,
+        wb: Array.isArray(t.wb) && t.wb.length === 3 ? t.wb.map(wbClamp) : [1, 1, 1] }; } catch (e) {}
+const wbActive = () => tone.wb.some(v => Math.abs(v - 1) > 0.001);
+const toneActive = () => tone.gamma !== 1 || tone.contrast !== 1 || tone.sharp > 0.001 || tone.noise !== 0 || wbActive();
+const fxNeeded = () => edgeOn || FXCHAN.has(chan) || toneActive() || tone.avg > 0;
+function toneLUT() {  // 256点LUT: gamma→contrastの順(GL側tn()と同式)
+  const L = new Uint8ClampedArray(256);
+  for (let i = 0; i < 256; i++) {
+    let v = Math.pow(i / 255, 1 / Math.max(0.05, tone.gamma));
+    v = (v - 0.5) * tone.contrast + 0.5;
+    L[i] = Math.max(0, Math.min(255, Math.round(v * 255)));
+  }
+  return L;
+}
+const NET9 = (() => { const n = []; for (let p = 0; p < 9; p++) for (let i = p % 2; i < 8; i += 2) n.push(i, i + 1); return new Int8Array(n); })();  // 偶奇トランスポジション整列(9段36CAS、GLSL側と同一定義)
+function noisePixels(img) {  // 3x3ノイズ低減: 1=中央値(a[4]) 2=ガウシアン[121/2442/121]/16、境界はCLAMP
+  const d = img.data, w = img.width, h = img.height, mode = tone.noise;
+  const src = new Uint8ClampedArray(d), a = new Array(9);
+  for (let y = 0; y < h; y++) {
+    const yu = (y > 0 ? y - 1 : 0) * w, yc = y * w, yd = (y < h - 1 ? y + 1 : h - 1) * w;
+    for (let x = 0; x < w; x++) {
+      const xl = x > 0 ? x - 1 : 0, xr = x < w - 1 ? x + 1 : w - 1, i = (yc + x) * 4;
+      if (mode === 1) {
+        for (let k = 0; k < 3; k++) {
+          a[0] = src[(yu + xl) * 4 + k]; a[1] = src[(yu + x) * 4 + k]; a[2] = src[(yu + xr) * 4 + k];
+          a[3] = src[(yc + xl) * 4 + k]; a[4] = src[i + k]; a[5] = src[(yc + xr) * 4 + k];
+          a[6] = src[(yd + xl) * 4 + k]; a[7] = src[(yd + x) * 4 + k]; a[8] = src[(yd + xr) * 4 + k];
+          for (let q = 0; q < 72; q += 2) { const u = NET9[q], v = NET9[q + 1]; if (a[u] > a[v]) { const t = a[u]; a[u] = a[v]; a[v] = t; } }
+          d[i + k] = a[4];
+        }
+      } else {
+        for (let k = 0; k < 3; k++) {
+          d[i + k] = (src[(yu + xl) * 4 + k] + 2 * src[(yu + x) * 4 + k] + src[(yu + xr) * 4 + k]
+                    + 2 * src[(yc + xl) * 4 + k] + 4 * src[i + k] + 2 * src[(yc + xr) * 4 + k]
+                    + src[(yd + xl) * 4 + k] + 2 * src[(yd + x) * 4 + k] + src[(yd + xr) * 4 + k]) / 16;
+        }
+      }
+    }
+  }
+}
+function toneSharpPixels(img) {  // 補正JS側: ノイズ低減→WBゲイン→LUT→unsharp(GLのfetch/wb3/tn/unsharpと同一順序)
+  const d = img.data, w = img.width, h = img.height;
+  if (tone.noise) noisePixels(img);
+  if (wbActive()) {  // ゲインは線形・中央値とも交換可能なのでノイズ低減後適用でGLと一致
+    const [wr, wg, wb] = tone.wb;
+    for (let i = 0; i < d.length; i += 4) { d[i] *= wr; d[i + 1] *= wg; d[i + 2] *= wb; }
+  }
+  if (tone.gamma !== 1 || tone.contrast !== 1) {
+    const L = toneLUT();
+    for (let i = 0; i < d.length; i += 4) { d[i] = L[d[i]]; d[i + 1] = L[d[i + 1]]; d[i + 2] = L[d[i + 2]]; }
+  }
+  if (tone.sharp > 0.001) {  // unsharp: c + s*(c - (c+4近傍)/5)、境界はCLAMP
+    const src = new Uint8ClampedArray(d);
+    for (let y = 0; y < h; y++) {
+      const yu = (y > 0 ? y - 1 : 0) * w, yd = (y < h - 1 ? y + 1 : h - 1) * w, yc = y * w;
+      for (let x = 0; x < w; x++) {
+        const xl = x > 0 ? x - 1 : 0, xr = x < w - 1 ? x + 1 : w - 1, c = yc + x, i = c * 4;
+        for (let k = 0; k < 3; k++) {
+          const cc = src[i + k];
+          const blur = (cc + src[(yu + x) * 4 + k] + src[(yd + x) * 4 + k] + src[(yc + xl) * 4 + k] + src[(yc + xr) * 4 + k]) / 5;
+          d[i + k] = Math.max(0, Math.min(255, cc + tone.sharp * (cc - blur)));
+        }
+      }
+    }
+  }
+}
+function srcAvgCanvas() {  // フレーム平均の最新蓄積フレーム(raw・未補正)。off/未蓄積時はnull
+  if (tone.avg <= 0 || !gl || accLast < 0 || !accInit) return null;
+  const w = accW, h = accH;
+  const sc = srcAvgCanvas;
+  if (!sc.c || sc.c.width !== w || sc.c.height !== h) { sc.c = document.createElement('canvas'); sc.c.width = w; sc.c.height = h; sc.buf = null; }
+  if (!sc.buf || sc.buf.length !== w * h * 4) { sc.buf = new Uint8Array(w * h * 4); sc.out = new Uint8ClampedArray(w * h * 4); }
+  gl.bindFramebuffer(gl.FRAMEBUFFER, accFBO[accLast]);
+  gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, sc.buf);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  // 蓄積テクスチャは動画テクスチャと同じ配置(v=0=上端)で保持しているため、readPixelsの行順はそのままImageDataへ使える
+  sc.out.set(sc.buf);
+  sc.c.getContext('2d').putImageData(new ImageData(sc.out, w, h), 0, 0);
+  return sc.c;
+}
+function drawSrcToned(g, W, H) {  // 解析経路共通: srcEl()(フレーム平均中は蓄積フレーム)を描画し補正を全フレームへ適用
+  const sa = srcAvgCanvas();
+  g.drawImage(sa || srcEl(), 0, 0);
+  if (toneActive()) { const img = g.getImageData(0, 0, W, H); toneSharpPixels(img); g.putImageData(img, 0, 0); }
+}
+function updateToneBtn() { $('tonebtn').classList.toggle('on', toneActive() || tone.avg > 0); }
+function syncToneUI() {
+  $('tgam').value = Math.round(tone.gamma * 100); $('tgamv').textContent = tone.gamma.toFixed(2);
+  $('tcon').value = Math.round(tone.contrast * 100); $('tconv').textContent = tone.contrast.toFixed(2);
+  $('tshp').value = Math.round(tone.sharp * 100); $('tshpv').textContent = tone.sharp.toFixed(2);
+  $('n0').classList.toggle('on', tone.noise === 0);
+  $('n1').classList.toggle('on', tone.noise === 1);
+  $('n2').classList.toggle('on', tone.noise === 2);
+  $('tavg').value = String(tone.avg);
+  $('wbr').value = Math.round(tone.wb[0] * 100); $('wbrv').textContent = tone.wb[0].toFixed(2);
+  $('wbg').value = Math.round(tone.wb[1] * 100); $('wbgv').textContent = tone.wb[1].toFixed(2);
+  $('wbb').value = Math.round(tone.wb[2] * 100); $('wbbv').textContent = tone.wb[2].toFixed(2);
+  updateToneBtn();
+}
+function setTone(g, c, s, n, a) {  // 補正値の適用: 表示・解析を即時更新(解析再実行は300ms間隔に間引く)
+  const avg = AVG_OK.includes(Math.round(+a || 0)) ? Math.round(+a || 0) : 0;
+  if (avg !== tone.avg) { accInit = false; accLast = -1; }  // 平均係数変更で蓄積を初期化
+  tone = { gamma: Math.max(0.2, Math.min(5, g)), contrast: Math.max(0.2, Math.min(3, c)), sharp: Math.max(0, Math.min(2, s)), noise: Math.max(0, Math.min(2, n | 0)), avg, wb: tone.wb };
+  localStorage.setItem('tone', JSON.stringify(tone));
+  syncToneUI(); setEdgeMode();
+  if (performance.now() - lastAreaT > 300) {
+    lastAreaT = performance.now();
+    if (mode === 'area') pixelCount(); else if (mode === 'part') { areaStats(); drawOverlay(); }
+  }
+}
+const tonemenu = $('tonemenu');
+$('tonebtn').onclick = e => {
+  e.stopPropagation();
+  if (tonemenu.style.display === 'flex') { tonemenu.style.display = 'none'; return; }
+  const r = $('tonebtn').getBoundingClientRect();
+  tonemenu.style.display = 'flex';
+  tonemenu.style.left = Math.max(4, Math.min(innerWidth - tonemenu.offsetWidth - 8, r.left)) + 'px';
+  tonemenu.style.top = (r.bottom + 6) + 'px';
+};
+$('tgam').oninput = () => setTone(+$('tgam').value / 100, tone.contrast, tone.sharp, tone.noise, tone.avg);
+$('tcon').oninput = () => setTone(tone.gamma, +$('tcon').value / 100, tone.sharp, tone.noise, tone.avg);
+$('tshp').oninput = () => setTone(tone.gamma, tone.contrast, +$('tshp').value / 100, tone.noise, tone.avg);
+$('n0').onclick = () => setTone(tone.gamma, tone.contrast, tone.sharp, 0, tone.avg);
+$('n1').onclick = () => setTone(tone.gamma, tone.contrast, tone.sharp, 1, tone.avg);
+$('n2').onclick = () => setTone(tone.gamma, tone.contrast, tone.sharp, 2, tone.avg);
+$('tavg').onchange = () => setTone(tone.gamma, tone.contrast, tone.sharp, tone.noise, +$('tavg').value);
+function setWb(r, g, b) {  // WBゲイン(0.5-2.0)。setTone経由で保存・全経路適用
+  tone.wb = [wbClamp(r), wbClamp(g), wbClamp(b)];
+  setTone(tone.gamma, tone.contrast, tone.sharp, tone.noise, tone.avg);
+}
+function wbAuto() {  // グレイワールド: 生フレーム(フレーム平均中は蓄積)のチャンネル平均を揃えるゲイン
+  if (!srcOK()) return;
+  const sa = srcAvgCanvas();
+  const c = document.createElement('canvas'); c.width = srcW(); c.height = srcH();
+  const g = c.getContext('2d', { willReadFrequently: true });
+  g.drawImage(sa || srcEl(), 0, 0);
+  const d = g.getImageData(0, 0, c.width, c.height).data;
+  let sr = 0, sg = 0, sb = 0, n = 0;
+  const step = Math.max(4, Math.floor(d.length / 4 / 65536) * 4);  // 約6.5万点サンプリング
+  for (let i = 0; i < d.length; i += step) { sr += d[i]; sg += d[i + 1]; sb += d[i + 2]; n++; }
+  const mr = sr / n, mg = sg / n, mb = sb / n, m = (mr + mg + mb) / 3;
+  setWb(m / Math.max(1, mr), m / Math.max(1, mg), m / Math.max(1, mb));
+}
+$('wbr').oninput = () => setWb(+$('wbr').value / 100, tone.wb[1], tone.wb[2]);
+$('wbg').oninput = () => setWb(tone.wb[0], +$('wbg').value / 100, tone.wb[2]);
+$('wbb').oninput = () => setWb(tone.wb[0], tone.wb[1], +$('wbb').value / 100);
+$('wbauto').onclick = () => wbAuto();
+// ---- 全自動補正: WB+ガンマ+コントラスト+ノイズ低減(+静止時のフレーム平均) ----
+let autoPrevLum = null;  // 前回サンプリングの輝度(動き推定用)。同一サイズ時のみ比較
+function autoTone() {
+  if (!srcOK()) return;
+  const w = srcW(), h = srcH();
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const g = c.getContext('2d', { willReadFrequently: true });
+  g.drawImage(srcEl(), 0, 0);  // 統計は常に生フレーム(フレーム平均中の蓄積でなく)
+  const d = g.getImageData(0, 0, w, h).data;
+  const stride = Math.max(1, Math.floor(w * h / 65536));  // 約6.5万点サンプリング
+  // 1) WB(グレイワールド)
+  let sr = 0, sg = 0, sb = 0, n = 0;
+  for (let y = 0; y < h; y += stride) for (let x = 0; x < w; x += stride) { const i = (y * w + x) * 4; sr += d[i]; sg += d[i + 1]; sb += d[i + 2]; n++; }
+  const mr = sr / n, mg = sg / n, mb = sb / n, mm = (mr + mg + mb) / 3;
+  const wbg = [mm / Math.max(1, mr), mm / Math.max(1, mg), mm / Math.max(1, mb)].map(wbClamp);
+  // 2) 輝度サンプル(WB適用後、cmpBlockLumと同じ.33/.5/.16重み)
+  const lum = new Float64Array(n); let k = 0;
+  for (let y = 0; y < h; y += stride) for (let x = 0; x < w; x += stride) { const i = (y * w + x) * 4;
+    lum[k++] = (0.33 * d[i] * wbg[0] + 0.5 * d[i + 1] * wbg[1] + 0.16 * d[i + 2] * wbg[2]) / 255; }
+  // 3) ガンマ: 平均輝度を0.5へ(pow(mean,1/gam)=0.5)
+  let mean = 0; for (let i = 0; i < n; i++) mean += lum[i]; mean /= n;
+  let gam = 1;
+  if (mean > 0.02 && mean < 0.98) gam = Math.max(0.5, Math.min(2, Math.log(mean) / Math.log(0.5)));  // pow(mean,1/gam)=0.5 を満たすgam
+  // 4) コントラスト: ガンマ後百分位p2-p98を1.0へストレット(上限1.5)
+  const g1 = new Float64Array(n);
+  for (let i = 0; i < n; i++) g1[i] = Math.pow(Math.min(1, Math.max(0, lum[i])), 1 / gam);
+  const sorted = Float64Array.from(g1).sort();
+  const p2 = sorted[Math.floor(n * 0.02)], p98 = sorted[Math.min(n - 1, Math.floor(n * 0.98))];
+  const span = p98 - p2;
+  const con = span > 0.05 ? Math.max(1, Math.min(1.5, 1 / span)) : 1;
+  // 5) ノイズσ推定: 横隣接差のMAD(ロバスト)。→ 中央値/ガウシアン選択
+  const diffs = [];
+  for (let y = 0; y < h; y += stride) for (let x = 1; x < w; x += stride) { const i = (y * w + x) * 4;
+    const la = 0.33 * d[i] * wbg[0] + 0.5 * d[i + 1] * wbg[1] + 0.16 * d[i + 2] * wbg[2];
+    const lb = 0.33 * d[i - 4] * wbg[0] + 0.5 * d[i - 3] * wbg[1] + 0.16 * d[i - 2] * wbg[2];
+    diffs.push(Math.abs(la - lb)); }
+  diffs.sort((a, b) => a - b);
+  const sigma = 1.4826 * diffs[Math.floor(diffs.length / 2)] / Math.SQRT2;
+  const noi = sigma < 3 ? 0 : (sigma < 10 ? 1 : 2);
+  // 6) フレーム平均: 動きが小さく(Δ<0.01)σが高いときのみ。動き大では行わない
+  let D = 0;
+  if (autoPrevLum && autoPrevLum.length === n) { let s = 0; for (let i = 0; i < n; i++) s += Math.abs(lum[i] - autoPrevLum[i]); D = s / n; }
+  autoPrevLum = lum;
+  const avg = (sigma >= 6 && D < 0.01) ? (sigma >= 12 ? 8 : 4) : 0;
+  setTone(gam, con, 0, noi, avg);
+  setWb(wbg[0], wbg[1], wbg[2]);
+}
+$('toneauto').onclick = () => autoTone();
+$('toneset').onclick = () => { tone.wb = [1, 1, 1]; setTone(1, 1, 0, 0, 0); };
+syncToneUI();
+applyFilters();
+
+// ---- エッジ表示: feConvolveMatrixは<video>では黒になるためWebGLで処理 ----
+const fx = $('fx');
+let gl = null, glProg = null, glTex = null;
+function ensureGL() {
+  if (gl) return true;
+  gl = fx.getContext('webgl', { preserveDrawingBuffer: true });
+  if (!gl) return false;
+  const vs = 'attribute vec2 p;varying vec2 uv;void main(){gl_Position=vec4(p,0.,1.);uv=vec2(p.x*.5+.5,.5-p.y*.5);}';
+  const fs = `precision mediump float;varying vec2 uv;uniform sampler2D t;uniform sampler2D tPrev;uniform vec2 px;uniform float chan;uniform float edg;uniform float gam;uniform float con;uniform float shp;uniform float noi;uniform float avgA;uniform vec3 wbg;
+    #define CS(a,b){vec3 m=min(a,b);b=max(a,b);a=m;}
+    vec3 med9(vec3 v0,vec3 v1,vec3 v2,vec3 v3,vec3 v4,vec3 v5,vec3 v6,vec3 v7,vec3 v8){  // 偶奇トランスポジション整列(9段36CAS、JS側NET9と同一定義)
+      CS(v0,v1)CS(v2,v3)CS(v4,v5)CS(v6,v7)
+      CS(v1,v2)CS(v3,v4)CS(v5,v6)CS(v7,v8)
+      CS(v0,v1)CS(v2,v3)CS(v4,v5)CS(v6,v7)
+      CS(v1,v2)CS(v3,v4)CS(v5,v6)CS(v7,v8)
+      CS(v0,v1)CS(v2,v3)CS(v4,v5)CS(v6,v7)
+      CS(v1,v2)CS(v3,v4)CS(v5,v6)CS(v7,v8)
+      CS(v0,v1)CS(v2,v3)CS(v4,v5)CS(v6,v7)
+      CS(v1,v2)CS(v3,v4)CS(v5,v6)CS(v7,v8)
+      CS(v0,v1)CS(v2,v3)CS(v4,v5)CS(v6,v7)
+      return v4;}
+    vec3 fetch(vec2 u){  // 3x3ノイズ低減: 1=中央値 2=ガウシアン(JS側noisePixelsと同一)
+      if(noi<0.5)return texture2D(t,u).rgb;
+      vec2 ox=vec2(px.x,0.),oy=vec2(0.,px.y);
+      vec3 c0=texture2D(t,u-ox-oy).rgb,c1=texture2D(t,u-oy).rgb,c2=texture2D(t,u+ox-oy).rgb,
+           c3=texture2D(t,u-ox).rgb,c4=texture2D(t,u).rgb,c5=texture2D(t,u+ox).rgb,
+           c6=texture2D(t,u-ox+oy).rgb,c7=texture2D(t,u+oy).rgb,c8=texture2D(t,u+ox+oy).rgb;
+      if(noi<1.5)return med9(c0,c1,c2,c3,c4,c5,c6,c7,c8);
+      return (c0+2.0*c1+c2+2.0*c3+4.0*c4+2.0*c5+c6+2.0*c7+c8)/16.0;}
+    vec3 sel(vec3 c){
+      if(chan>0.5&&chan<1.5)return vec3(c.r);
+      if(chan>1.5&&chan<2.5)return vec3(c.g);
+      if(chan>2.5&&chan<3.5)return vec3(c.b);
+      if(chan>3.5&&chan<4.5)return vec3((c.r+c.g)*0.5);                       // R+G(Human Eye)
+      if(chan>4.5&&chan<5.5)return vec3((c.r-c.g-c.b+2.0)/3.0);              // R-(G+B)(Red Enhance)
+      if(chan>5.5&&chan<6.5)return vec3(c.g/(c.r+c.g+c.b+0.001));            // G/(R+G+B)(Green Enhance)
+      if(chan>6.5&&chan<7.5)return vec3((2.0*c.g-c.r-c.b+2.0)/4.0);          // 2G-(R+B)(ExG)
+      if(chan>7.5&&chan<8.5)return vec3(c.r/(c.r+c.g+0.001));                // R/(R+G)(Red Index)
+      if(chan>8.5&&chan<9.5)return vec3(c.g/(c.g+c.b+0.001));                // G/(G+B)(Green Index)
+      if(chan>9.5&&chan<10.5)return vec3(c.b/(c.r+c.g+0.001));               // B/(R+G)(Blue Index)
+      if(chan>10.5&&chan<11.5)return vec3((c.r+2.0*c.g+c.b)/4.0);            // (R+2G+B)/4(Pseudo Gray)
+      return c;}
+    vec3 tn(vec3 c){c=pow(clamp(c,0.,1.),vec3(1.0/max(gam,0.05)));return (c-0.5)*con+0.5;}  // ガンマ→コントラスト(JS側toneLUTと同式)
+    vec3 wb3(vec3 c){return c*wbg;}  // ホワイトバランスゲイン(0.5-2.0)
+    vec3 base(vec2 u){return tn(wb3(fetch(u)));}  // 補正済み画素: ノイズ低減→WB→ガンマ→コントラスト
+    void main(){
+      if(avgA>0.001){  // 蓄積パス: prev*(1-avgA)+new*avgA をFBOへ(raw。補正は表示パスで施す)
+        // uvは表示用y反転済み。蓄積テクスチャは動画テクスチャと同じ配置(v=0=上端)で保持するため反転して読む
+        vec2 auv=vec2(uv.x,1.0-uv.y);
+        gl_FragColor=vec4(mix(texture2D(tPrev,auv).rgb,texture2D(t,auv).rgb,avgA),1.);return;}
+      if(edg>0.5){  // エッジ表示は補正の影響を受けない従来経路
+        vec3 K=vec3(.33,.5,.16);
+        float lc=dot(sel(texture2D(t,uv).rgb),K);
+        float lu=dot(sel(texture2D(t,uv+vec2(0.,-px.y)).rgb),K);
+        float ld=dot(sel(texture2D(t,uv+vec2(0., px.y)).rgb),K);
+        float ll=dot(sel(texture2D(t,uv-vec2(px.x,0.)).rgb),K);
+        float lr=dot(sel(texture2D(t,uv+vec2(px.x,0.)).rgb),K);
+        gl_FragColor=vec4(vec3(clamp(4.*lc-lu-ld-ll-lr,0.,1.)),1.);return;}
+      vec3 c=base(uv);
+      if(shp>0.001){  // unsharp: c+s*(c-(c+4近傍)/5) — 近傍もノイズ低減済み値(JS側と同一順序)
+        vec3 bu=base(uv+vec2(0.,-px.y));
+        vec3 bd=base(uv+vec2(0., px.y));
+        vec3 bl=base(uv-vec2(px.x,0.));
+        vec3 br=base(uv+vec2(px.x,0.));
+        c=c+shp*(c-(c+bu+bd+bl+br)/5.0);}
+      gl_FragColor=vec4(clamp(sel(c),0.,1.),1.);}`;
+  function sh(type, src) { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s);
+    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s)); return s; }
+  glProg = gl.createProgram();
+  gl.attachShader(glProg, sh(gl.VERTEX_SHADER, vs));
+  try {
+    gl.attachShader(glProg, sh(gl.FRAGMENT_SHADER, fs));
+  } catch (e) { gl.deleteProgram(glProg); glProg = null; gl = null; return false; }  // コンパイル失敗: 劣化状態を残さず再試行可能に
+  gl.linkProgram(glProg);
+  if (!gl.getProgramParameter(glProg, gl.LINK_STATUS)) { gl = null; return false; }
+  gl.useProgram(glProg);
+  const buf = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
+  const a = gl.getAttribLocation(glProg, 'p');
+  gl.enableVertexAttribArray(a);
+  gl.vertexAttribPointer(a, 2, gl.FLOAT, false, 0, 0);
+  glTex = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, glTex);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  return true;
+}
+function resizeFx() {  // fxの表示サイズを映像側要素と同一に(回転/拡大縮小も同期)
+  fx.style.width = srcEl().clientWidth + 'px';
+  fx.style.height = srcEl().clientHeight + 'px';
+}
+function ensureAccum(w, h) {  // フレーム平均用ping-pong FBO(RGBA8)。サイズ変更時に再作成
+  if (accFBO[0] && accW === w && accH === h) return true;
+  for (let i = 0; i < 2; i++) {
+    if (accFBO[i]) { gl.deleteFramebuffer(accFBO[i]); accFBO[i] = null; }
+    if (accTEX[i]) { gl.deleteTexture(accTEX[i]); accTEX[i] = null; }
+  }
+  for (let i = 0; i < 2; i++) {
+    const tex = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    const fbo = gl.createFramebuffer();
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
+    if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) {
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      for (let j = 0; j < 2; j++) {
+        if (accFBO[j]) { gl.deleteFramebuffer(accFBO[j]); accFBO[j] = null; }
+        if (accTEX[j]) { gl.deleteTexture(accTEX[j]); accTEX[j] = null; }
+      }
+      return false;
+    }
+    accFBO[i] = fbo; accTEX[i] = tex;
+  }
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  gl.bindTexture(gl.TEXTURE_2D, glTex);
+  accW = w; accH = h; accCur = 0; accInit = false; accLast = -1;
+  return true;
+}
+function renderGL() {
+  if (!ensureGL() || !srcOK()) return;
+  if (fx.width !== srcW() || fx.height !== srcH()) {
+    fx.width = srcW(); fx.height = srcH();
+  }
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, glTex);  // 表示パスでunit0が蓄積テクスチャに切り替わっているため毎回戻す
+  gl.viewport(0, 0, fx.width, fx.height);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, srcEl());
+  gl.uniform2f(gl.getUniformLocation(glProg, 'px'), 1 / fx.width, 1 / fx.height);
+  gl.uniform1f(gl.getUniformLocation(glProg, 'chan'), CHAN_CODE[chan] || 0);
+  gl.uniform1f(gl.getUniformLocation(glProg, 'edg'), edgeOn ? 1 : 0);
+  gl.uniform1f(gl.getUniformLocation(glProg, 'gam'), tone.gamma);
+  gl.uniform1f(gl.getUniformLocation(glProg, 'con'), tone.contrast);
+  gl.uniform1f(gl.getUniformLocation(glProg, 'shp'), tone.sharp);
+  gl.uniform1f(gl.getUniformLocation(glProg, 'noi'), tone.noise);
+  gl.uniform3f(gl.getUniformLocation(glProg, 'wbg'), tone.wb[0], tone.wb[1], tone.wb[2]);
+  if (tone.avg > 0 && ensureAccum(fx.width, fx.height)) {  // 蓄積パス: unit0=新フレーム unit1=prev → accFBO[accCur]へ
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, accTEX[accCur ^ 1]);  // prevは常に反対側(初回はα=1で未使用。同一テクスチャ参照はfeedbackループで1282)
+    gl.uniform1i(gl.getUniformLocation(glProg, 'tPrev'), 1);
+    gl.uniform1f(gl.getUniformLocation(glProg, 'avgA'), accInit ? 1 / tone.avg : 1);  // 初フレームは全面コピー(残像なし)
+    gl.bindFramebuffer(gl.FRAMEBUFFER, accFBO[accCur]);
+    gl.viewport(0, 0, accW, accH);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, accTEX[accCur]);  // 表示元=最新蓄積フレーム
+    accLast = accCur; accCur ^= 1; accInit = true;
+  }
+  gl.uniform1f(gl.getUniformLocation(glProg, 'avgA'), 0);  // 表示パス
+  gl.viewport(0, 0, fx.width, fx.height);
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+}
+function setEdgeMode() {  // エッジ・数式チャンネル・補正はfxキャンバス(GL)で表示
+  video.style.visibility = ''; fi.style.visibility = '';
+  if (fxNeeded() && ensureGL()) { resizeFx(); fx.style.display = 'block'; srcEl().style.visibility = 'hidden'; renderGL(); }
+  else { fx.style.display = 'none'; }  // GL不可時は補正なしで映像を直接表示(劣化を明示)
+  applyFilters();
+}
+
+function applyTransform() {
+  const sy = (mirrored ? -1 : 1) * zoom;
+  const tf = `rotate(${rot}deg) scale(${zoom},${sy})`;
+  video.style.transform = tf;
+  fi.style.transform = tf;
+  resizeFx();
+  fx.style.transform = `translate(-50%,-50%) rotate(${rot}deg) scale(${zoom},${sy})`;
+  drawOverlay();
+}
+
+// ---- 比較モード(④): 左=固定(Reference) / 右=ライブ(Sample) / 差分ブロックを両側にマーク ----
+// 基準はdrawSrcToned(補正適用後)で取得=「見たままが計測値」。差分検出は16pxブロック平均輝度(250ms間引き)。
+const CMP_BLK = 16;
+function cmpBlockLum(img) {  // 16pxブロックの平均輝度(.33/.5/.16、ブロック内4点サンプリング)
+  const w = img.width, h = img.height, d = img.data;
+  const bw = Math.ceil(w / CMP_BLK), bh = Math.ceil(h / CMP_BLK), out = new Float32Array(bw * bh);
+  for (let by = 0; by < bh; by++) for (let bx = 0; bx < bw; bx++) {
+    let s = 0, n = 0;
+    for (let dy = 4; dy < CMP_BLK; dy += 8) for (let dx = 4; dx < CMP_BLK; dx += 8) {
+      const x = bx * CMP_BLK + dx, y = by * CMP_BLK + dy;
+      if (x >= w || y >= h) continue;
+      const i = (y * w + x) * 4; s += .33 * d[i] + .5 * d[i + 1] + .16 * d[i + 2]; n++;
+    }
+    out[by * bw + bx] = n ? s / n : 0;
+  }
+  return out;
+}
+function cmpCapture() {  // 現在フレーム(補正適用後)を基準として固定し比較開始
+  if (!srcOK()) return;
+  const W = srcW(), H = srcH();
+  const c = document.createElement('canvas'); c.width = W; c.height = H;
+  const g = c.getContext('2d', { willReadFrequently: true });
+  drawSrcToned(g, W, H);
+  cmpRefCv = c; cmpRefW = W; cmpRefH = H;
+  cmpRefLum = cmpBlockLum(g.getImageData(0, 0, W, H));
+  setCmp(true); cmpDraw();
+}
+function setCmp(on) {
+  cmpOn = on;
+  $('cmpbtn').classList.toggle('on', on);
+  $('cmpcv').style.display = on ? 'block' : 'none';
+  if (!on) { cmpMarks = []; cmpCount = 0; }
+}
+function cmpDiff() {  // ライブ(補正適用後)と基準のブロック輝度差>閾値をマーク対象に
+  if (!cmpRefLum) return;
+  const live = cmpBlockLum(frameData());
+  cmpMarks = [];
+  const bw = Math.ceil(cmpRefW / CMP_BLK);
+  for (let i = 0; i < live.length; i++)
+    if (Math.abs(live[i] - cmpRefLum[i]) > cmpThr)
+      cmpMarks.push({ x: (i % bw) * CMP_BLK, y: Math.floor(i / bw) * CMP_BLK });
+  cmpCount = cmpMarks.length;
+}
+function cmpFit(iw, ih, dw, dh) { const s = Math.min(dw / iw, dh / ih); return { s, ox: (dw - iw * s) / 2, oy: (dh - ih * s) / 2 }; }
+function cmpDraw() {
+  if (!cmpOn || !cmpRefCv) return;
+  if (!srcOK() || srcW() !== cmpRefW || srcH() !== cmpRefH) { setCmp(false); return; }  // 解像度・ソース変更では自動終了
+  const cv = $('cmpcv');
+  const W = cv.clientWidth, H = cv.clientHeight;
+  if (W < 50 || H < 50) return;
+  if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
+  const g = cv.getContext('2d');
+  g.fillStyle = '#000'; g.fillRect(0, 0, W, H);
+  const half = Math.floor(W / 2);
+  const live = (fxNeeded() && gl) ? fx : srcEl();  // 表示中の画と一致させる
+  const iw = srcW(), ih = srcH();
+  const fL = cmpFit(iw, ih, half - 4, H - 24), fR = cmpFit(iw, ih, half - 4, H - 24);
+  g.drawImage(cmpRefCv, 2 + fL.ox, 12 + fL.oy, iw * fL.s, ih * fL.s);   // 左=Reference(固定)
+  g.drawImage(live, half + 2 + fR.ox, 12 + fR.oy, iw * fR.s, ih * fR.s);  // 右=Sample(ライブ)
+  if (performance.now() - cmpLastDiff > 250) { cmpLastDiff = performance.now(); cmpDiff(); }
+  for (const m of cmpMarks) {  // 差分ブロックは左右両側に同一位置へ(比較しやすさ)
+    for (const [f, off] of [[fL, 2], [fR, half + 2]]) {
+      const x = off + f.ox + m.x * f.s, y = 12 + f.oy + m.y * f.s, sz = CMP_BLK * f.s;
+      g.fillStyle = 'rgba(255,0,255,.15)'; g.fillRect(x, y, sz, sz);
+      g.strokeStyle = 'rgba(255,0,255,.9)'; g.lineWidth = 1.5; g.strokeRect(x, y, sz, sz);
+    }
+  }
+  g.strokeStyle = '#666'; g.lineWidth = 1; g.beginPath(); g.moveTo(half + 0.5, 0); g.lineTo(half + 0.5, H); g.stroke();
+  g.fillStyle = '#fff'; g.font = '13px sans-serif';
+  g.fillText('Reference(固定)', 8, 20); g.fillText('Sample(ライブ)', half + 8, 20);
+  g.fillText('差分ブロック: ' + cmpCount + ' (閾値 ' + cmpThr + ')', 8, H - 8);
+}
+const cmpmenu = $('cmpmenu');
+$('cmpbtn').onclick = e => {
+  e.stopPropagation();
+  if (cmpmenu.style.display === 'flex') { cmpmenu.style.display = 'none'; return; }
+  const r = $('cmpbtn').getBoundingClientRect();
+  cmpmenu.style.display = 'flex';
+  cmpmenu.style.left = Math.max(4, Math.min(innerWidth - cmpmenu.offsetWidth - 8, r.left)) + 'px';
+  cmpmenu.style.top = (r.bottom + 6) + 'px';
+};
+$('cmpcap').onclick = () => { cmpmenu.style.display = 'none'; cmpCapture(); };
+$('cmpfile').onclick = () => {
+  cmpmenu.style.display = 'none';
+  if (!srcOK()) { status.textContent = '比較基準の読み込みには映像(カメラ/画像)が必要です'; return; }
+  $('cmppicfile').click();
+};
+$('cmppicfile').onchange = e => {
+  const f = e.target.files && e.target.files[0]; e.target.value = '';
+  if (!f) return;
+  const img = new Image();
+  img.onload = () => {
+    const W = srcW(), H = srcH();
+    const c = document.createElement('canvas'); c.width = W; c.height = H;
+    const g = c.getContext('2d', { willReadFrequently: true });
+    g.drawImage(img, 0, 0, W, H);  // 現行解像度へ引き伸ばし(ブロックグリッド一致)
+    cmpRefCv = c; cmpRefW = W; cmpRefH = H;
+    cmpRefLum = cmpBlockLum(g.getImageData(0, 0, W, H));
+    setCmp(true); cmpDraw();
+    status.textContent = '比較基準をファイルから設定: ' + f.name;
+    URL.revokeObjectURL(img.src);
+  };
+  img.onerror = () => { status.textContent = '比較基準の画像読み込み失敗: ' + f.name; URL.revokeObjectURL(img.src); };
+  img.src = URL.createObjectURL(f);
+};
+$('cmsoff').onclick = () => { cmpmenu.style.display = 'none'; setCmp(false); };
+try { const v = Math.round(+localStorage.getItem('cmp thr') || 0); if (v >= 5 && v <= 255) cmpThr = v; } catch (e) {}
+$('cmthr').value = cmpThr; $('cmthrv').textContent = String(cmpThr);
+$('cmthr').oninput = () => {
+  cmpThr = +$('cmthr').value; $('cmthrv').textContent = String(cmpThr);
+  localStorage.setItem('cmp thr', String(cmpThr));
+  if (cmpOn) cmpDiff();
+};
+
+// ---- 測定: 校正(mm/px)と2点間距離。座標はネイティブ映像pxで保持 ----
+let mode = 'dist';               // 'dist' | 'cal'
+let calMap = JSON.parse(localStorage.getItem('micro-cal') || '{}'); // "WxH" -> mmPerPx
+let meas = [];                   // {a,b,mm}
+let calSeg = JSON.parse(localStorage.getItem('micro-calseg') || 'null'); // 較正線 {a,b,mm}（トグルで表示ON/OFF、スナップショットにも反映）
+let calSegOn = false;            // 較正線の表示状態(既定OFF)
+let pending = null, hover = null;
+let pureView = false;  // 画像のみ: 解析結果(測定線/ROI/成分/パネル)を描画しない
+// ---- 点分析: 基準点とそこからの相対距離 ----
+let refPt = null;   // 基準点 {x,y,key}
+let ptList = [];    // 相対距離を測る点 [{x,y,key}]
+// ---- 角度解析: 3点A→頂点B→Cの順。頂点の内角(0-180°)は較正不要で不変 ----
+let angles = [];   // {a,b,c,key}  b=頂点
+let angPts = [];   // 入力中の一時的3点
+function angDeg(a, b, c) {
+  const v1x = a.x - b.x, v1y = a.y - b.y, v2x = c.x - b.x, v2y = c.y - b.y;
+  const cross = v1x * v2y - v1y * v2x, dot = v1x * v2x + v1y * v2y;
+  return Math.atan2(Math.abs(cross), dot) * 180 / Math.PI;  // 0..180
+}
+// 共通図形描画: P,Q,R=頂点,R2=終点(任意の同一座標系)。ラベルはlabelInfoで向きを制御
+function drawAngleShape(ctx, P, Q, R, deg, live, mirrored, fs) {
+  ctx.strokeStyle = live ? 'rgba(255,179,71,.55)' : 'rgba(255,179,71,.95)';
+  if (live) ctx.setLineDash([5, 4]);
+  ctx.beginPath(); ctx.moveTo(P.x, P.y); ctx.lineTo(Q.x, Q.y); ctx.lineTo(R.x, R.y); ctx.stroke();
+  ctx.setLineDash([]);
+  const d1 = Math.hypot(P.x - Q.x, P.y - Q.y), d2 = Math.hypot(R.x - Q.x, R.y - Q.y);
+  if (d1 > 2 && d2 > 2) {
+    const r = Math.max(12, Math.min(50, 0.35 * Math.min(d1, d2)));
+    const a1 = Math.atan2(P.y - Q.y, P.x - Q.x);
+    let delta = Math.atan2(R.y - Q.y, R.x - Q.x) - a1;
+    while (delta > Math.PI) delta -= 2 * Math.PI;
+    while (delta < -Math.PI) delta += 2 * Math.PI;
+    ctx.beginPath(); ctx.moveTo(Q.x, Q.y);
+    ctx.arc(Q.x, Q.y, r, a1, a1 + delta, delta < 0);
+    ctx.closePath(); ctx.fillStyle = 'rgba(255,179,71,.15)'; ctx.fill();
+    ctx.beginPath(); ctx.arc(Q.x, Q.y, r, a1, a1 + delta, delta < 0); ctx.stroke();
+    // 角ラベル(二等分線方向)
+    const mid = a1 + delta / 2;
+    const lx = Q.x + Math.cos(mid) * (r + 18), ly = Q.y + Math.sin(mid) * (r + 18);
+    const t = '∠' + deg.toFixed(2) + '°';
+    ctx.font = fs + 'px monospace';
+    const tw = ctx.measureText(t).width;
+    ctx.fillStyle = 'rgba(0,0,0,.7)'; ctx.fillRect(lx - 3, ly - fs + 2, tw + 6, fs + 6);
+    ctx.fillStyle = '#ffc96a';
+    if (mirrored) { ctx.save(); ctx.scale(-1, 1); ctx.fillText(t, -lx, ly); ctx.restore(); }
+    else ctx.fillText(t, lx, ly);
+  }
+  for (const q of [P, Q, R]) { ctx.beginPath(); ctx.arc(q.x, q.y, q === Q ? 5 : 3, 0, 7); ctx.stroke(); }  // 頂点は大きな円
+}
+// ---- 形状測定: 円=円周上3点(外接円)/矩形・正方形=対角2点/領域=四頂点4点。辺長は較正時はmm ----
+let shapes = [];   // {kind:'circle'|'rect2'|'square2'|'quad', pts:[...], key}
+let shpPts = [];   // 入力中(確定前の一時点)
+function circumCircle(a, b, c) {  // 3点からの外接円。ほぼ同一直線なら null
+  const d = 2 * (a.x * (b.y - c.y) + b.x * (c.y - a.y) + c.x * (a.y - b.y));
+  if (Math.abs(d) < 1e-9) return null;
+  const a2 = a.x*a.x + a.y*a.y, b2 = b.x*b.x + b.y*b.y, c2 = c.x*c.x + c.y*c.y;
+  const ux = (a2*(b.y-c.y) + b2*(c.y-a.y) + c2*(a.y-b.y)) / d;
+  const uy = (a2*(c.x-b.x) + b2*(a.x-c.x) + c2*(b.x-a.x)) / d;
+  return { x: ux, y: uy, r: Math.hypot(ux - a.x, uy - a.y) };
+}
+function quadArea(pts) {  // 面積(鞋帯公式)。px²
+  let s = 0;
+  for (let i = 0; i < pts.length; i++) {
+    const a = pts[i], b = pts[(i + 1) % pts.length];
+    s += a.x * b.y - b.x * a.y;
+  }
+  return Math.abs(s) / 2;
+}
+function shapeCircle(s) { return circumCircle(s.pts[0], s.pts[1], s.pts[2]); }
+function shpNeed(kind) { return kind === 'circle' ? 3 : (kind === 'rect2' || kind === 'square2') ? 2 : 4; }
+function shapeCorners(s) {  // 矩形=対角2点/正方形=対角2点 -> 図形の四隅(画像軸基準)
+  if (s.kind === 'rect2') {
+    const [a, b] = s.pts;
+    return [{ x: a.x, y: a.y }, { x: b.x, y: a.y }, { x: b.x, y: b.y }, { x: a.x, y: b.y }];
+  }
+  if (s.kind === 'square2') {
+    const [a, b] = s.pts, mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+    const vx = a.x - mx, vy = a.y - my;
+    return [a, { x: mx - vy, y: my + vx }, b, { x: mx + vy, y: my - vx }];
+  }
+  return s.pts;
+}
+// map: 映像px->図座標。mirrored/textMirror: レンダリング反転時の文字向き補正
+function drawShapeShape(ctx, s, map, mirrored, fs) {
+  const mpp = mmPerPx();
+  const fL = (d) => mpp ? (d * mpp).toFixed(2) + ' mm' : Math.round(d) + ' px';
+  const fA = (a) => mpp ? (a * mpp * mpp).toFixed(2) + ' mm²' : Math.round(a) + ' px²';
+  const put = (t, x, y, col) => {
+    ctx.font = fs + 'px monospace';
+    const tw = ctx.measureText(t).width;
+    ctx.fillStyle = 'rgba(0,0,0,.7)'; ctx.fillRect(x - 3, y - fs, tw + 6, fs + 6);
+    ctx.fillStyle = col;
+    if (mirrored) { ctx.save(); ctx.scale(-1, 1); ctx.fillText(t, -x, y); ctx.restore(); }
+    else ctx.fillText(t, x, y);
+  };
+  if (s.kind === 'circle') {
+    const cc = shapeCircle(s);
+    if (!cc) return;
+    const P = s.pts.map(q => map(q.x, q.y)), C = map(cc.x, cc.y), E = map(cc.x + cc.r, cc.y);
+    const rS = Math.hypot(E.x - C.x, E.y - C.y);
+    ctx.strokeStyle = 'rgba(127,178,255,.95)'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(C.x, C.y, rS, 0, 7); ctx.stroke();
+    ctx.beginPath(); ctx.arc(C.x, C.y, 4, 0, 7); ctx.stroke();  // 中心
+    ctx.beginPath(); ctx.moveTo(C.x, C.y); ctx.lineTo(P[0].x, P[0].y); ctx.stroke();  // 半径
+    for (const q of P) { ctx.beginPath(); ctx.arc(q.x, q.y, 3, 0, 7); ctx.stroke(); }
+    put('r=' + fL(cc.r) + '  d=' + fL(2*cc.r) + '  S=' + fA(Math.PI*cc.r*cc.r), C.x + 8, C.y - rS - 8, '#9fc4ff');
+  } else {
+    const corners = shapeCorners(s);
+    const P = corners.map(q => map(q.x, q.y));
+    ctx.strokeStyle = 'rgba(255,179,71,.95)'; ctx.lineWidth = 2;
+    ctx.beginPath(); P.forEach((q, i) => i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y)); ctx.closePath();
+    ctx.fillStyle = 'rgba(255,179,71,.10)'; ctx.fill(); ctx.stroke();
+    for (const q of P) { ctx.beginPath(); ctx.arc(q.x, q.y, 3, 0, 7); ctx.stroke(); }
+    const gx = (P[0].x+P[1].x+P[2].x+P[3].x)/4, gy = (P[0].y+P[1].y+P[2].y+P[3].y)/4;
+    for (let i = 0; i < 4; i++) {
+      const A = corners[i], B = corners[(i + 1) % 4], PA = P[i], PB = P[(i + 1) % 4];
+      const mx = (PA.x + PB.x) / 2, my = (PA.y + PB.y) / 2;
+      let ox = mx - gx, oy = my - gy; const ol = Math.hypot(ox, oy) || 1;
+      put('L' + (i + 1) + '=' + fL(vpxDist(A, B)), mx + ox / ol * 14, my + oy / ol * 14, '#ffc96a');
+    }
+    const d1 = vpxDist(corners[0], corners[2]), d2 = vpxDist(corners[1], corners[3]);
+    put('S=' + fA(quadArea(corners)) + '  対角=' + fL(d1) + '/' + fL(d2), gx - 40, gy, '#ffc96a');
+  }
+}
+// ---- 線分析: 線分A-B(ネイティブpx)と輝度プロファイル ----
+let lineSeg = null;  // {a,b,key}
+let lineProf = null; let lineEdgeX = null; let lineEdgeThr = +(localStorage.getItem('line edge thr') || 12);  // 線分析エッジ検出結果 {i,x,g} // 線分析プロファイル実データ {a,b,prof,N,d,key} — CSV出力用
+let shpType = 'circle';  // 形状測定の種別(メニューで選択)
+const plotPanel = $('plotpanel'), plotc = $('plotc');
+$('lplot').onclick = () => setMode(mode === 'line' ? 'dist' : 'line');
+$('edthr').value = lineEdgeThr;
+$('edthr').onchange = () => {
+  lineEdgeThr = Math.max(1, Math.min(255, +$('edthr').value || 12));
+  $('edthr').value = lineEdgeThr;
+  localStorage.setItem('line edge thr', String(lineEdgeThr));
+  if (lineSeg && lineSeg.key === curKey()) sampleLine();
+};
+$('plotclose').onclick = () => { if (mode === 'line') setMode('dist'); };
+// ---- 解析パネルのタイトルバー移動(位置記憶) ----
+function makePanelDraggable(panel, head) {
+  let sx = 0, sy = 0, ox = 0, oy = 0, dragging = false;
+  head.addEventListener('pointerdown', e => {
+    if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT') return;  // ×ボタン等は移動しない
+    dragging = true; try { head.setPointerCapture(e.pointerId); } catch (err) {}
+    const r = panel.getBoundingClientRect(), s = panel.offsetParent.getBoundingClientRect();
+    sx = e.clientX; sy = e.clientY; ox = r.left - s.left; oy = r.top - s.top;
+    e.preventDefault();
+  });
+  head.addEventListener('pointermove', e => {
+    if (!dragging) return;
+    const s = panel.offsetParent.getBoundingClientRect();
+    let x = ox + e.clientX - sx, y = oy + e.clientY - sy;
+    x = Math.max(0, Math.min(s.width - panel.offsetWidth, x));
+    y = Math.max(0, Math.min(s.height - panel.offsetHeight, y));
+    panel.style.left = x + 'px'; panel.style.top = y + 'px';
+    panel.style.right = 'auto'; panel.style.bottom = 'auto';
+    localStorage.setItem('panel pos ' + panel.id, JSON.stringify({x, y}));
+  });
+  head.addEventListener('pointerup', () => { dragging = false; });
+}
+makePanelDraggable(plotPanel, $('plothead'));
+makePanelDraggable($('areapanel'), $('areahand'));
+function restorePanelPos() {  // 記憶した位置を復元(画面サイズに合わせて内側に収める)
+  for (const id of ['plotpanel', 'areapanel']) {
+    try {
+      const pos = JSON.parse(localStorage.getItem('panel pos ' + id) || 'null');
+      if (!pos) continue;
+      const el = $(id), s = el.offsetParent.getBoundingClientRect();
+      el.style.right = 'auto'; el.style.bottom = 'auto';
+      el.style.left = Math.max(0, Math.min(s.width - 40, pos.x)) + 'px';
+      el.style.top = Math.max(0, Math.min(s.height - 40, pos.y)) + 'px';
+    } catch (e) {}
+  }
+}
+restorePanelPos();
+// ---- 領域測定: ROI多角形 + 2値化连通成分(細胞)統計 ----
+let areas = [];       // [{pts:[{x,y}...], key}] 同一解像度キーのみ有効
+let livePts = [];     // 編集中の頂点
+let areaHoverPt = null;  // プレビュー用の最新マウス位置
+let dragPt = null;       // 頂点ドラッグ中 {A?:ROIobj, vi} または {live:true, vi}
+let areaComps = [];   // 直近統計結果(表示・PNG共用)
+let lastAreaT = 0;
+let areaRoiPx2 = 0;
+let thr = +(localStorage.getItem('area thr') || 128);
+let cntTarget = null;   // 目標色 {r,g,b}
+let cntTol = +(localStorage.getItem('cnt tol') || 60);
+let pickArmed = false;  // 次クリックで色指定
+let cntResult = null;   // {per:[{matched,roiPx2}], totMatch, totRoi}
+let polarity = localStorage.getItem('area pol') || 'light';  // light:明亮画素 dark:暗画素
+let minArea = +(localStorage.getItem('area min') || 50);     // px²
+// ImageJ由来の追加設定: 背景補正(モフォロジカル opening)/Otsu自動閾値/Watershed接触分離/円形度フィルタ
+let bgRad = +(localStorage.getItem('area bgrad') || 0);
+let wtrOn = localStorage.getItem('area wtr') === 'on';
+let cirMin = +(localStorage.getItem('area circ') || 0);
+// 色相セグメンテーション(③): HSV色相±許容かつ彩度下限で抽出(輝度閾値・極性・背景補正は非適用)
+let segMode = localStorage.getItem('seg mode') === 'hue' ? 'hue' : 'lum';
+let hueC = Math.min(360, Math.max(0, +(localStorage.getItem('seg hue') || 210)));
+let hueTol = Math.min(180, Math.max(5, +(localStorage.getItem('seg huetol') || 40)));
+let satMin = Math.min(90, Math.max(0, +(localStorage.getItem('seg sat') || 25)));
+function rgbHueSat(r, g, b) {  // HSVの色相(0-360)と彩度(0-1)
+  const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn;
+  if (!d || !mx) return [0, mx ? 0 : 0];
+  let h = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
+  h = (h * 60 + 360) % 360;
+  return [h, d / mx];
+}
+function polyAreaPx2(pts) {
+  let s2 = 0;
+  for (let i = 0; i < pts.length; i++) {
+    const a = pts[i], b = pts[(i + 1) % pts.length];
+    s2 += a.x * b.y - b.x * a.y;
+  }
+  return Math.abs(s2) / 2;
+}
+function fmtArea(mm2) {
+  if (mm2 == null) return '較正なし';
+  if (mm2 >= 10) return mm2.toFixed(1);
+  if (mm2 >= 0.01) return mm2.toFixed(3);
+  return null;  // µm²側で表記
+}
+function fmtArea2(mm2) {  // "123.4 mm²" 形式(小さい値はµm²)
+  if (mm2 == null) return '較正なし';
+  const v = fmtArea(mm2);
+  if (v != null) return v + ' mm²';
+  return Math.round(mm2 * 1e6) + ' µm²';
+}
+function inPoly(p, pts) {  // レイキャスト法
+  let c = false;
+  for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+    if (((pts[i].y > p.y) !== (pts[j].y > p.y)) &&
+        (p.x < (pts[j].x - pts[i].x) * (p.y - pts[i].y) / (pts[j].y - pts[i].y) + pts[i].x)) c = !c;
+  }
+  return c;
+}
+function validAreas() { return areas.filter(A => A.key === curKey()); }
+function vertexHit(p) {  // ネイティブpx点に画面10px相当以内の頂点があれば返す
+  const s = srcEl().offsetWidth / (srcW() || 1) || 1;
+  const thrN = 10 / s;
+  for (const A of validAreas())
+    for (let vi = 0; vi < A.pts.length; vi++)
+      if (Math.hypot(p.x - A.pts[vi].x, p.y - A.pts[vi].y) <= thrN) return { A, vi };
+  for (let vi = 1; vi < livePts.length; vi++)  // 先頭点は多角形確定の操作に温存
+    if (Math.hypot(p.x - livePts[vi].x, p.y - livePts[vi].y) <= thrN) return { live: true, vi };
+  return null;
+}
+function closeArea() {
+  if (livePts.length >= 3) {
+    areas.push({ pts: livePts.slice(), key: curKey() }); livePts = [];
+    areaHoverPt = null;
+    drawOverlay();
+    if (mode === 'area') { pickArmed = !cntTarget; if (pickArmed) $('pickcolor').classList.add('on'); pixelCount(); }
+    else areaStats();
+    return;
+  }
+  areaHoverPt = null;
+  drawOverlay();
+}
+$('m-area').onclick = () => setMode(mode === 'area' ? 'dist' : 'area');
+$('m-part').onclick = () => setMode(mode === 'part' ? 'dist' : 'part');
+$('areaclose').onclick = () => { if (roiMode()) setMode('dist'); };
+$('pickcolor').onclick = () => { pickArmed = !pickArmed; $('pickcolor').classList.toggle('on', pickArmed); };
+$('cnttol').value = cntTol; $('cnttolv').textContent = cntTol;
+$('cnttol').oninput = () => { cntTol = +$('cnttol').value; $('cnttolv').textContent = cntTol; localStorage.setItem('cnt tol', cntTol); pixelCount(); };
+$('thr').value = thr; $('thrv').textContent = thr;
+$('minarea').value = minArea; $('minareav').textContent = minArea;
+const setPol = p => { polarity = p; localStorage.setItem('area pol', p);
+  $('thrp').classList.toggle('on', p === 'light'); $('thrd').classList.toggle('on', p === 'dark'); areaStats(); };
+$('thrp').onclick = () => setPol('light');
+$('thrd').onclick = () => setPol('dark');
+$('thr').oninput = () => { thr = +$('thr').value; $('thrv').textContent = thr; localStorage.setItem('area thr', thr); areaStats(); };
+$('segmode').value = segMode; $('huec').value = hueC; $('huecv').textContent = String(hueC);
+$('huetol').value = hueTol; $('huetolv').textContent = String(hueTol);
+$('satmin').value = satMin; $('satminv').textContent = String(satMin);
+$('segmode').onchange = () => { segMode = $('segmode').value; localStorage.setItem('seg mode', segMode); areaStats(); };
+$('huec').oninput = () => { hueC = +$('huec').value; $('huecv').textContent = String(hueC); localStorage.setItem('seg hue', hueC); areaStats(); };
+$('huetol').oninput = () => { hueTol = +$('huetol').value; $('huetolv').textContent = String(hueTol); localStorage.setItem('seg huetol', hueTol); areaStats(); };
+$('satmin').oninput = () => { satMin = +$('satmin').value; $('satminv').textContent = String(satMin); localStorage.setItem('seg sat', satMin); areaStats(); };
+$('minarea').oninput = () => { minArea = +$('minarea').value; $('minareav').textContent = minArea; localStorage.setItem('area min', minArea); areaStats(); };
+$('bgrad').value = bgRad; $('bgradv').textContent = bgRad;
+$('bgrad').oninput = () => { bgRad = +$('bgrad').value; $('bgradv').textContent = bgRad; localStorage.setItem('area bgrad', bgRad); areaStats(); };
+$('wtr').checked = wtrOn;
+$('wtr').onchange = () => { wtrOn = $('wtr').checked; localStorage.setItem('area wtr', wtrOn ? 'on' : 'off'); areaStats(); };
+$('cirmin').value = cirMin; $('cirminv').textContent = cirMin;
+$('cirmin').oninput = () => { cirMin = +$('cirmin').value; $('cirminv').textContent = cirMin; localStorage.setItem('area circ', cirMin); areaStats(); };
+$('autothr').onclick = () => {
+  const t = areaStats.lastHist ? otsu(areaStats.lastHist) : null;
+  if (t == null) return;
+  thr = Math.max(1, Math.min(254, t));
+  $('thr').value = thr; $('thrv').textContent = thr;
+  localStorage.setItem('area thr', thr); areaStats();
+};
+function otsu(hist) {  // 標準Otsu: クラス間分散を最大化する閾値
+  const N = hist.reduce((s, v) => s + v, 0);
+  if (!N) return null;
+  let sum = 0; for (let i = 0; i < 256; i++) sum += i * hist[i];
+  let sumB = 0, wB = 0, best = -1, bestT = 0;
+  for (let t = 0; t < 256; t++) {
+    wB += hist[t]; if (!wB) continue;
+    const wF = N - wB; if (!wF) break;
+    sumB += t * hist[t];
+    const mB = sumB / wB, mF = (sum - sumB) / wF;
+    const v = wB * wF * (mB - mF) * (mB - mF);
+    if (v > best) { best = v; bestT = t; }
+  }
+  return bestT;
+}
+setPol(polarity);
+const stage = $('stage');
+stage.addEventListener('contextmenu', e => {
+  if (roiMode() && livePts.length) { e.preventDefault(); closeArea(); }
+});
+
+function morphBg(E, gw, gh, r) {  // 明い背景の推定: 膨張(max)->収縮(min)のgray opening
+  const tmp = new Uint8Array(E.length);
+  for (let y = 0; y < gh; y++) {
+    const b = y * gw;
+    for (let x = 0; x < gw; x++) {
+      let m = 0;
+      const xa = Math.max(0, x - r), xb = Math.min(gw - 1, x + r);
+      for (let xx = xa; xx <= xb; xx++) if (E[b + xx] > m) m = E[b + xx];
+      tmp[b + x] = m;
+    }
+  }
+  const out = new Uint8Array(E.length);
+  for (let x = 0; x < gw; x++)
+    for (let y = 0; y < gh; y++) {
+      let m = 255;
+      const ya = Math.max(0, y - r), yb = Math.min(gh - 1, y + r);
+      for (let yy = ya; yy <= yb; yy++) if (tmp[yy * gw + x] < m) m = tmp[yy * gw + x];
+      out[y * gw + x] = m;
+    }
+  return out;
+}
+function watershedLab(mask, gw, gh) {  // 距離変換の局所極大を種にmulti-source BFS(=watershed近似)
+  const N = gw * gh;
+  const dt = new Float64Array(N).fill(1e9);
+  for (let i = 0; i < N; i++) if (!mask[i]) dt[i] = 0;
+  for (let y = 0; y < gh; y++) for (let x = 0; x < gw; x++) {
+    const i = y * gw + x; if (!mask[i]) continue;
+    let v = dt[i];
+    if (x > 0) v = Math.min(v, dt[i - 1] + 1);
+    if (y > 0) { v = Math.min(v, dt[i - gw] + 1);
+      if (x > 0) v = Math.min(v, dt[i - gw - 1] + 1.414);
+      if (x < gw - 1) v = Math.min(v, dt[i - gw + 1] + 1.414); }
+    dt[i] = v;
+  }
+  for (let y = gh - 1; y >= 0; y--) for (let x = gw - 1; x >= 0; x--) {
+    const i = y * gw + x; if (!mask[i]) continue;
+    let v = dt[i];
+    if (x < gw - 1) v = Math.min(v, dt[i + 1] + 1);
+    if (y < gh - 1) { v = Math.min(v, dt[i + gw] + 1);
+      if (x > 0) v = Math.min(v, dt[i + gw - 1] + 1.414);
+      if (x < gw - 1) v = Math.min(v, dt[i + gw + 1] + 1.414); }
+    dt[i] = v;
+  }
+  const seeds = [];
+  for (let y = 0; y < gh; y++) for (let x = 0; x < gw; x++) {
+    const i = y * gw + x; if (!mask[i] || dt[i] < 3) continue;
+    let mx = true;  // 非极大値抑制: 近傍に厳密に大きい点がなければ種(同値はindex最小が代表)
+    for (let dy = -3; dy <= 3 && mx; dy++) for (let dx = -3; dx <= 3; dx++) {
+      if (!dy && !dx) continue;
+      const nx = x + dx, ny = y + dy;
+      if (nx < 0 || ny < 0 || nx >= gw || ny >= gh) continue;
+      const dv = dt[ny * gw + nx];
+      if (dv > dt[i] || (dv === dt[i] && ny * gw + nx < i)) { mx = false; break; }
+    }
+    if (mx) seeds.push(i);
+  }
+  if (!seeds.length) return null;
+  seeds.sort((a, b) => dt[b] - dt[a]);
+  // 平坦な尾根上の多重種を抑制: 高さ順に残し、採用種の半径R内の後継種を捨てる
+  const kept = [];
+  for (const s of seeds) {
+    let near = false;
+    for (const k of kept) {
+      const R = 0.5 * dt[k];
+      if (Math.hypot(s % gw - k % gw, ((s / gw) | 0) - ((k / gw) | 0)) < Math.max(5, R)) { near = true; break; }
+    }
+    if (!near) kept.push(s);
+  }
+  const lab = new Uint16Array(N);
+  const q = [];
+  kept.forEach((s, k) => { lab[s] = k + 1; q.push(s); });
+  for (let h = 0; h < q.length; h++) {
+    const v = q[h], L = lab[v], x = v % gw, y = (v / gw) | 0;
+    if (x > 0 && mask[v - 1] && !lab[v - 1]) { lab[v - 1] = L; q.push(v - 1); }
+    if (x < gw - 1 && mask[v + 1] && !lab[v + 1]) { lab[v + 1] = L; q.push(v + 1); }
+    if (y > 0 && mask[v - gw] && !lab[v - gw]) { lab[v - gw] = L; q.push(v - gw); }
+    if (y < gh - 1 && mask[v + gw] && !lab[v + gw]) { lab[v + gw] = L; q.push(v + gw); }
+  }
+  return lab;
+}
+function compStats(idSet, same, gw) { // 共通統計: 面積重心bbox外周長(円形度)二次モーメント(縦横比)
+  let n = 0, sx = 0, sy = 0, x1 = 1e9, x2 = -1, y1 = 1e9, y2 = -1, per = 0;
+  for (const id of idSet) {
+    const vy = (id / gw) | 0, vx = id % gw;
+    n++; sx += vx; sy += vy;
+    x1 = Math.min(x1, vx); x2 = Math.max(x2, vx); y1 = Math.min(y1, vy); y2 = Math.max(y2, vy);
+    if (!same(id - 1, id) || vx === 0) per++;
+    if (!same(id + 1, id) || vx === gw - 1) per++;
+    if (!same(id - gw, id)) per++;
+    if (!same(id + gw, id)) per++;
+  }
+  let m2xx = 0, m2yy = 0, m2xy = 0;  // 重心まわりの二次モーメント(格子px単位、nで正規化して固有値へ)
+  if (n > 1) {
+    const cxg = sx / n, cyg = sy / n;
+    for (const id of idSet) {
+      const vy = (id / gw) | 0, vx = id % gw, dx = vx - cxg, dy = vy - cyg;
+      m2xx += dx * dx; m2yy += dy * dy; m2xy += dx * dy;
+    }
+  }
+  return { n, sx, sy, x1, x2, y1, y2, per, m2xx, m2yy, m2xy };
+}
+function areaStats() {  // 粒子解析: ROI内2値化+成分統計(ImageJ風: 背景補正/Otsu/Watershed/円形度)+粒子径・ヒストグラム
+  if (mode !== 'part') { areaComps = []; return; }
+  const A = validAreas();
+  areaComps = []; areaRoiPx2 = 0; areaStats.lastHist = null;
+  if (!A.length || !srcOK()) { $('partStats').textContent = 'ROI未指定: 左クリックで頂点→右クリックで確定'; drawHist([]); return; }
+  const W = srcW(), H = srcH(), mpp = mmPerPx();
+  let bx = W, by = H, bx2 = 0, by2 = 0;
+  for (const a of A) {
+    areaRoiPx2 += polyAreaPx2(a.pts);
+    for (const p of a.pts) {
+      bx = Math.min(bx, p.x); by = Math.min(by, p.y); bx2 = Math.max(bx2, p.x); by2 = Math.max(by2, p.y);
+    }
+  }
+  bx = Math.max(0, Math.floor(bx)); by = Math.max(0, Math.floor(by));
+  bx2 = Math.min(W, Math.ceil(bx2)); by2 = Math.min(H, Math.ceil(by2));
+  const bw = bx2 - bx, bh = by2 - by;
+  if (bw < 2 || bh < 2) return;
+  const step = bw * bh > 4e6 ? 2 : 1;
+  const gw = Math.ceil(bw / step) + 1, gh = Math.ceil(bh / step) + 1;
+  if (!areaStats.c) areaStats.c = document.createElement('canvas');
+  const c = areaStats.c;
+  if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
+  const g = c.getContext('2d', { willReadFrequently: true });
+  drawSrcToned(g, W, H);
+  const img = g.getImageData(bx, by, bw, bh).data;
+  const E = new Uint8Array(gw * gh), inR = new Uint8Array(gw * gh);
+  for (let gy = 0; gy < gh; gy++) {
+    const ny = by + gy * step;
+    for (let gx = 0; gx < gw; gx++) {
+      const nx = bx + gx * step;
+      const j = ((ny - by) * bw + (nx - bx)) * 4;
+      E[gy * gw + gx] = Math.min(255, 0.33 * img[j] + 0.5 * img[j + 1] + 0.16 * img[j + 2]);
+      for (const a of A) { if (inPoly({ x: nx, y: ny }, a.pts)) { inR[gy * gw + gx] = 1; break; } }
+    }
+  }
+  if (bgRad > 0) {
+    const bg = morphBg(E, gw, gh, bgRad);
+    for (let i = 0; i < E.length; i++) E[i] = E[i] > bg[i] ? E[i] - bg[i] : 0;
+  }
+  const hist = new Uint32Array(256);
+  for (let i = 0; i < E.length; i++) if (inR[i]) hist[E[i]]++;
+  areaStats.lastHist = hist;
+  const mask = new Uint8Array(gw * gh);
+  if (segMode === 'hue') {  // 色相区分: 元RGBからHSVで判定(背景補正後のEは用いない)
+    for (let gy = 0; gy < gh; gy++) for (let gx = 0; gx < gw; gx++) {
+      const i = gy * gw + gx;
+      if (!inR[i]) continue;
+      const j = ((gy * step) * bw + gx * step) * 4;
+      const [h, s] = rgbHueSat(img[j], img[j + 1], img[j + 2]);
+      let dh = Math.abs(h - hueC); dh = Math.min(dh, 360 - dh);
+      mask[i] = (dh <= hueTol && s >= satMin / 100) ? 1 : 0;
+    }
+  } else for (let i = 0; i < mask.length; i++) {
+    if (!inR[i]) continue;
+    mask[i] = polarity === 'light' ? (E[i] >= thr ? 1 : 0) : (E[i] < thr ? 1 : 0);
+  }
+  const lab = (wtrOn && step === 1) ? watershedLab(mask, gw, gh) : null;
+  let rejected = 0;
+  const pushComp = st => {
+    const areaPx = st.n * step * step;
+    if (areaPx < minArea) return;
+    const circ = st.per > 0 ? 4 * Math.PI * st.n / (st.per * st.per) : 0;  // 円形度=4πA/P²
+    if (cirMin > 0 && st.per > 0 && circ < cirMin / 100) { rejected++; return; }
+    // 形状ディスクリプタ: 二次モーメント固有値から長短軸(ImageJ式 major=4√λ1)。比はスケール不変
+    let ar = 1, majorPx = 0, minorPx = 0;
+    if (st.n > 1) {
+      const a2 = st.m2xx / st.n, b2 = st.m2yy / st.n, h = st.m2xy / st.n;
+      const tr = a2 + b2, det = a2 * b2 - h * h;
+      const disc = Math.sqrt(Math.max(0, tr * tr - 4 * det));
+      majorPx = 4 * Math.sqrt((tr + disc) / 2) * step;
+      minorPx = 4 * Math.sqrt(Math.max(0, (tr - disc) / 2)) * step;
+      ar = minorPx > 0.5 ? majorPx / minorPx : 1;
+    }
+    areaComps.push({
+      cx: bx + (st.sx / st.n) * step, cy: by + (st.sy / st.n) * step,
+      x1: bx + st.x1 * step, x2: bx + (st.x2 + 1) * step, y1: by + st.y1 * step, y2: by + (st.y2 + 1) * step,
+      areaPx, areaMm2: mpp ? areaPx * mpp * mpp : null, n: st.n,
+      dEqPx: 2 * Math.sqrt(areaPx / Math.PI),  // 等価円径(粒子径)
+      circ, ar, majorPx, minorPx               // 形状ディスクリプタ(CSV・パネルへ)
+    });
+  };
+  if (lab) {  // Watershed分離済み: ラベルごとに統計, 種を持たない成分はBFSで補う
+    const groups = new Map();
+    const rest = [];
+    for (let i = 0; i < mask.length; i++) {
+      if (!mask[i]) continue;
+      if (lab[i]) { const ar = groups.get(lab[i]) || []; ar.push(i); groups.set(lab[i], ar); }
+      else rest.push(i);
+    }
+    for (const ar of groups.values())
+      pushComp(compStats(ar, (j, s) => mask[j] && lab[j] === lab[s], gw));
+    const seen = new Uint8Array(mask.length), stack = [];
+    for (const id0 of rest) {
+      if (seen[id0]) continue;
+      const ids = [];
+      stack.push(id0); seen[id0] = 1;
+      while (stack.length) {
+        const v = stack.pop(); ids.push(v);
+        const vy = (v / gw) | 0, vx = v % gw;
+        if (vx > 0 && mask[v-1] && !lab[v-1] && !seen[v-1]) { seen[v-1] = 1; stack.push(v-1); }
+        if (vx < gw-1 && mask[v+1] && !lab[v+1] && !seen[v+1]) { seen[v+1] = 1; stack.push(v+1); }
+        if (vy > 0 && mask[v-gw] && !lab[v-gw] && !seen[v-gw]) { seen[v-gw] = 1; stack.push(v-gw); }
+        if (vy < gh-1 && mask[v+gw] && !lab[v+gw] && !seen[v+gw]) { seen[v+gw] = 1; stack.push(v+gw); }
+      }
+      pushComp(compStats(ids, (j, s) => mask[j] && !lab[j], gw));
+    }
+  } else {
+    const seen = new Uint8Array(gw * gh), stack = [];
+    for (let gy = 0; gy < gh; gy++) for (let gx = 0; gx < gw; gx++) {
+      const id = gy * gw + gx;
+      if (!mask[id] || seen[id]) continue;
+      const ids = [];
+      stack.push(id); seen[id] = 1;
+      while (stack.length) {
+        const v = stack.pop(); ids.push(v);
+        const vy = (v / gw) | 0, vx = v % gw;
+        if (vx > 0     && mask[v-1] && !seen[v-1]) { seen[v-1] = 1; stack.push(v-1); }
+        if (vx < gw-1  && mask[v+1] && !seen[v+1]) { seen[v+1] = 1; stack.push(v+1); }
+        if (vy > 0     && mask[v-gw] && !seen[v-gw]) { seen[v-gw] = 1; stack.push(v-gw); }
+        if (vy < gh-1  && mask[v+gw] && !seen[v+gw]) { seen[v+gw] = 1; stack.push(v+gw); }
+      }
+      pushComp(compStats(ids, (j, s) => mask[j], gw));
+    }
+  }
+  areaComps.sort((a, b) => b.areaPx - a.areaPx);
+  const total = areaComps.reduce((s, o) => s + o.areaPx, 0);
+  let txt = `ROI: ${areaRoiPx2.toFixed(0)} px²` + (mpp ? ` (${fmtArea2(areaRoiPx2 * mpp * mpp)})` : '') + '\n';
+  if (segMode === 'hue') txt += `区分=色相${hueC}°±${hueTol} 彩度≥${satMin}% 最小${minArea}px² 読取${step}px`;
+  else txt += `閾値${thr} ${polarity === 'light' ? '(明)' : '(暗)'} 最小${minArea}px² 読取${step}px`;
+  if (bgRad) txt += ` BG補正${bgRad}`;
+  if (wtrOn) txt += ` WS${lab ? '済' : '(適用外)'}`;
+  if (cirMin) txt += ` 円形度≥${cirMin}%`;
+  txt += '\n';
+  txt += `粒子数: ${areaComps.length} 個`;
+  if (rejected) txt += ` (円形度除外${rejected})`;
+  if (areaComps.length) {
+    txt += `  総面積: ${mpp ? fmtArea2(total * mpp * mpp) : total + ' px²'}\n`;
+    txt += `領域比: ${(100 * total / areaRoiPx2).toFixed(2)} %\n`;
+    txt += `平均面積: ${mpp ? fmtArea2(total * mpp * mpp / areaComps.length) : Math.round(total / areaComps.length) + ' px²'}`;
+    txt += `  最大面積: ${mpp ? fmtArea2(areaComps[0].areaMm2) : areaComps[0].areaPx + ' px²'}\n`;
+    const fD = px => mpp ? (px * mpp).toFixed(2) + ' mm' : px.toFixed(2) + ' px';
+    const ds = areaComps.map(o => o.dEqPx);
+    const dmin = Math.min(...ds), dmax = Math.max(...ds), davg = ds.reduce((s, v) => s + v, 0) / ds.length;
+    const dsq = ds.slice().sort((a, b) => a - b);
+    const q = f => dsq[Math.min(dsq.length - 1, Math.floor(dsq.length * f))];
+    const csq = areaComps.map(o => o.circ * 100).sort((a, b) => a - b);
+    txt += `粒子径(等価円): 平均${fD(davg)} 中央値${fD(q(0.5))} 四分位${fD(q(0.25))}〜${fD(q(0.75))} 範囲${fD(dmin)}〜${fD(dmax)}`;
+    txt += `  円形度中央値${csq[Math.floor(csq.length / 2)].toFixed(0)}%`;
+    if (areaComps.length <= 15) {  // 粒子数が多い場合はCSVのみ(パネルが読みにくなる)
+      const fC = o => mpp ? `${(o.cx * mpp).toFixed(2)},${(o.cy * mpp).toFixed(2)}mm` : `${Math.round(o.cx)},${Math.round(o.cy)}px`;
+      txt += '\n--- ディスクリプタ(CSVにも出力) ---\n';
+      areaComps.forEach((o, i) => {
+        txt += `#${i + 1} d=${fD(o.dEqPx)} 円形度=${(o.circ * 100).toFixed(0)}% 縦横比=${o.ar.toFixed(2)} 長軸=${fD(o.majorPx)} 短軸=${fD(o.minorPx)} @${fC(o)}\n`;
+      });
+    }
+  }
+  $('partStats').textContent = txt;
+  drawHist(areaComps);
+}
+// ---- 面分析: ROI内の指定色ピクセルカウント ----
+const roiMode = () => mode === 'area' || mode === 'part';
+function ptInPoly(x, y, pts) {  // レイキャスト法
+  let inside = false;
+  for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+    const a = pts[i], b = pts[j];
+    if ((a.y > y) !== (b.y > y) && x < (b.x - a.x) * (y - a.y) / (b.y - a.y) + a.x) inside = !inside;
+  }
+  return inside;
+}
+function frameData() {  // 全フレームImageData(同一サイズはcanvas再利用)。補正+シャープを適用後の画を返す=見たままが計測値
+  if (!frameData.c) frameData.c = document.createElement('canvas');
+  const c = frameData.c, W = srcW(), H = srcH();
+  if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
+  const g = c.getContext('2d', { willReadFrequently: true });
+  drawSrcToned(g, W, H);
+  return g.getImageData(0, 0, W, H);
+}
+function pixelCount() {
+  const A = validAreas();
+  cntResult = null;
+  if (mode !== 'area') return;
+  if (!A.length || !srcOK()) { $('areaStats').textContent = cntTarget ? 'ROI未指定: 左クリックで頂点→右クリックで確定' : 'ROI確定後、色指定→対象色をクリック'; return; }
+  if (!cntTarget) { $('areaStats').textContent = '目標色未指定: 「色指定」ボタン後に対象色をクリック (Shift+クリックでも指定)'; return; }
+  const img = frameData(), W = srcW(), H = srcH();
+  const tr = cntTarget.r, tg = cntTarget.g, tb = cntTarget.b, tol2 = cntTol * cntTol;
+  let totMatch = 0, totRoi = 0;
+  const per = [];
+  for (const a of A) {
+    const pts = a.pts;
+    let x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity;
+    for (const p of pts) { x1 = Math.min(x1, p.x); y1 = Math.min(y1, p.y); x2 = Math.max(x2, p.x); y2 = Math.max(y2, p.y); }
+    let matched = 0;
+    for (let y = Math.max(0, Math.floor(y1)); y <= Math.min(H - 1, Math.ceil(y2)); y++)
+      for (let x = Math.max(0, Math.floor(x1)); x <= Math.min(W - 1, Math.ceil(x2)); x++) {
+        if (!ptInPoly(x + 0.5, y + 0.5, pts)) continue;
+        const j = (y * W + x) * 4, d = img.data[j], e = img.data[j + 1], f = img.data[j + 2];
+        if ((d - tr) * (d - tr) + (e - tg) * (e - tg) + (f - tb) * (f - tb) <= tol2) matched++;
+      }
+    const roiPx2 = polyAreaPx2(pts);
+    per.push({ matched, roiPx2 }); totMatch += matched; totRoi += roiPx2;
+  }
+  cntResult = { per, totMatch, totRoi };
+  const mpp = mmPerPx();
+  const fA = a => mpp ? (a * mpp * mpp).toFixed(2) + ' mm²' : a.toFixed(0) + ' px²';
+  let txt = `目標色 rgb(${tr},${tg},${tb}) 許容差${cntTol}(RGB距離)\n`;
+  per.forEach((p, i) => {
+    txt += `ROI${i + 1}: ${p.matched} px ${fA(p.matched)} / ROI ${fA(p.roiPx2)} (${(100 * p.matched / p.roiPx2).toFixed(2)}%)\n`;
+  });
+  txt += `合計: ${totMatch} px ${fA(totMatch)}  ROI総 ${fA(totRoi)} (${(100 * totMatch / totRoi).toFixed(2)}%)`;
+  $('areaStats').textContent = txt;
+  drawOverlay();
+}
+function drawHist(comps) {  // 粒子径ヒストグラム(等価円径、較正時はmm)
+  const c = $('histc'), ctx = c.getContext('2d');
+  ctx.clearRect(0, 0, c.width, c.height);
+  const mpp = mmPerPx(), ml = 34, mb = 16, mr = 6;
+  if (!comps.length) {
+    ctx.fillStyle = '#666'; ctx.font = '11px monospace';
+    ctx.fillText('粒子なし: ROIと閾値を指定してください', ml, c.height / 2);
+    return;
+  }
+  const ds = comps.map(o => o.dEqPx * (mpp || 1));
+  const lo = Math.min(...ds), hi = Math.max(...ds);
+  const NB = 12, span = (hi - lo) || 1, bins = new Array(NB).fill(0);
+  for (const v of ds) bins[Math.min(NB - 1, Math.floor((v - lo) / span * NB))]++;
+  const maxc = Math.max(...bins);
+  const bw = (c.width - ml - mr) / NB, ch = c.height - mb - 8;
+  const unit = mpp ? 'mm' : 'px';
+  ctx.strokeStyle = '#555'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(ml, 4); ctx.lineTo(ml, c.height - mb); ctx.lineTo(c.width - mr, c.height - mb); ctx.stroke();
+  ctx.fillStyle = '#8fb48f'; ctx.font = '10px monospace';
+  for (let i = 0; i <= 2; i++) {
+    const y = c.height - mb - ch * i / 2;
+    ctx.fillText(String(Math.round(maxc * i / 2)), 4, y + 3);
+  }
+  for (let i = 0; i < NB; i++) {
+    if (!bins[i]) continue;
+    const h = Math.max(1, ch * bins[i] / maxc);
+    ctx.fillStyle = 'rgba(255,179,71,.85)';
+    ctx.fillRect(ml + i * bw + 1, c.height - mb - h, bw - 2, h);
+  }
+  ctx.fillStyle = '#999';
+  ctx.fillText(lo.toFixed(2), ml, c.height - 4);
+  ctx.fillText(hi.toFixed(2) + ' ' + unit, c.width - mr - ctx.measureText(hi.toFixed(2) + ' ' + unit).width, c.height - 4);
+  ctx.fillText(`粒子径ヒストグラム n=${comps.length}`, ml + 6, 12);
+}
+
+function curKey() {
+  if (mediaMode === 'file') return (fi.naturalWidth || 0) + 'x' + (fi.naturalHeight || 0);
+  const s = stream && stream.getVideoTracks()[0].getSettings();
+  return s ? s.width + 'x' + s.height : '0x0';
+}
+function mmPerPx() { return calMap[curKey()] || null; }
+
+function toVideoPt(e) {  // 画面クリック -> 変換前のネイティブ映像px
+  const el = srcEl();
+  const r = el.getBoundingClientRect();
+  const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+  const m = new DOMMatrix().translateSelf(cx, cy).rotateSelf(rot)
+            .scaleSelf(zoom, mirrored ? -zoom : zoom);
+  const p = new DOMPoint(e.clientX, e.clientY).matrixTransform(m.inverse());
+  return {
+    x: p.x * (srcW()  / el.offsetWidth)  + srcW()  / 2,
+    y: p.y * (srcH()  / el.offsetHeight) + srcH()  / 2
+  };
+}
+function toStagePt(vx, vy) {  // ネイティブ映像px -> オーバーレイcanvas座標
+  const el = srcEl();
+  const r = el.getBoundingClientRect(), sr = stage.getBoundingClientRect();
+  const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+  const m = new DOMMatrix().translateSelf(cx, cy).rotateSelf(rot)
+            .scaleSelf(zoom, mirrored ? -zoom : zoom);
+  const p = new DOMPoint(
+    (vx - srcW() / 2)  * (el.offsetWidth  / srcW()),
+    (vy - srcH() / 2)  * (el.offsetHeight / srcH())
+  ).matrixTransform(m);
+  return { x: p.x - sr.left, y: p.y - sr.top };
+}
+function vpxDist(a, b) { return Math.hypot(b.x - a.x, b.y - a.y); }
+
+// ---- スケールバー(電子顕微鏡風: 黒枠・白線・長さ表示) ----
+let scaleBarOn = true;
+let scaleBarLiveState = true;  // 実時間表示復帰時に復元する値(画像解析では自動OFF)
+const OFS = 13;  // オーバーレイ文字の統一フォントサイズ(px, monospace): グリッド/ルーラー/スケールバー/測定値(11-24統一)
+function niceScaleMm(mpp) {  // 従来の約半分の長さ: 旧基準(視野2割)で選び、その半数を1-2-5系列に丸める(11-24)
+  const raw = 0.2 * srcW() * mpp;
+  const p = Math.pow(10, Math.floor(Math.log10(raw)));
+  let old = 10 * p;
+  for (const m of [1, 2, 5, 10]) if (m * p >= raw * 0.7) { old = m * p; break; }
+  const half = old / 2;
+  const p2 = Math.pow(10, Math.floor(Math.log10(half)));
+  return [p2, 2 * p2, 5 * p2, 10 * p2].reduce((a, b) => Math.abs(b - half) < Math.abs(a - half) ? b : a);
+}
+function fmtLen(mm) {
+  if (mm >= 1) return mm.toFixed(0) + ' mm';
+  if (mm >= 0.1) return mm.toFixed(1) + ' mm';
+  return Math.round(mm * 1000) + ' µm';
+}
+// ---- ルーラー(画像辺に沿った目盛り): 未較正=px表示、較正後=mm表示 ----
+let rulerOn = true;
+function rulerStepU(mpp) {  // 目盛り大間隔: 視野の約12%を目標に1-2-5系列(較正時mm/未較正px)
+  const raw = 0.12 * srcW() * (mpp || 1);
+  const p = Math.pow(10, Math.floor(Math.log10(raw)));
+  for (const m of [1, 2, 5]) if (m * p >= raw * 0.4) return m * p;
+  return 10 * p;
+}
+// ---- 物理グリッド: 間隔選択肢と自動値 ----
+function autoGridMm(mpp) {  // 視野の約1/12を目標に1-2-5系列
+  const raw = srcW() * mpp / 12;
+  const p = Math.pow(10, Math.floor(Math.log10(raw)));
+  for (const m of [1, 2, 5]) if (m * p >= raw * 0.5) return m * p;
+  return 10 * p;
+}
+function gridStepOptions() {  // 20px〜視野幅までの1-2-5系列(mm)
+  const mpp = mmPerPx(); const out = [];
+  if (!mpp || !srcW()) return out;
+  const fov = srcW() * mpp, min = mpp * 20;
+  for (let p = Math.pow(10, Math.floor(Math.log10(min))); p <= fov * 1.0001; p *= 10)
+    for (const m of [1, 2, 5]) { const v = m * p; if (v >= min * 0.999 && v <= fov * 1.0001) out.push(v); }
+  return out;
+}
+function populateGridSteps() {
+  const sel = $('gridstep');
+  const want = localStorage.getItem('grid step') || 'auto';
+  sel.innerHTML = '<option value="px">50px(画面)</option><option value="auto">自動</option>';
+  for (const v of gridStepOptions()) {
+    const o = document.createElement('option');
+    o.value = String(v); o.textContent = '格子 ' + fmtLen(v);
+    sel.appendChild(o);
+  }
+  sel.value = want;
+  if (!sel.value) sel.value = 'auto';
+}
+// ---- スケールバー下の情報行(撮影日時・サンプル名) ----
+let tstampOn = true, tsampOn = true;
+const MON3 = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function fmtDT(d = new Date()) {  // 英語略記: Mon-DD-YYYY hh:mm:ss
+  const p = n => String(n).padStart(2, '0');
+  return `${MON3[d.getMonth()]}-${p(d.getDate())}-${d.getFullYear()} ` +
+         `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+}
+function scaleInfoLines() {
+  const out = [];
+  if (tstampOn) out.push(fmtDT());
+  const s = ($('sampname').value || '').trim();
+  if (tsampOn && s) out.push(s);
+  return out;
+}
+// ctx: 描画先, barFn: 実mm->描画px, x2y2: 右下角の基準点, fs: フォントサイズ
+// info: 単位ラベルの下に中央揃えで重ね描きする文字列配列
+function drawScaleBar(ctx, mpp, barFn, x2, y2, fs, info = []) {
+  // 11-24 Moto指示: 主目盛り・副目盛りを廃止し、単一の塗りバーにする。厚みは旧副目盛りの高さ(2×tickH×2/3)に合わせる。
+  const mm = niceScaleMm(mpp), label = fmtLen(mm);
+  const bar = barFn(mm);
+  ctx.font = fs + 'px monospace';
+  const labW = ctx.measureText(label).width;
+  const infoW = Math.max(0, ...info.map(t => ctx.measureText(t).width));
+  const pad = Math.max(6, fs * 0.4);
+  const barH = Math.max(8, fs * 0.7) * 4 / 3;
+  const lineH = fs * 1.3;
+  const boxW = Math.max(bar, labW, infoW) + pad * 2;
+  const boxH = pad * 2 + barH + fs + lineH * info.length;
+  const bx = x2 - boxW, by = y2 - boxH;
+  ctx.fillStyle = 'rgba(0,0,0,.85)'; ctx.fillRect(bx, by, boxW, boxH);
+  // 11-24 Moto指示: バー・長さ表示・情報行とも黒帯内でセンタリング(情報行がバーより広いときバーが左寄せに見えないため)
+  const lx1 = bx + (boxW - bar) / 2;
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(lx1, by + pad, bar, barH);
+  ctx.fillText(label, bx + (boxW - labW) / 2, by + pad + barH + fs);
+  let ty = by + pad + barH + fs + lineH;
+  for (const t of info) {
+    ctx.fillText(t, bx + (boxW - ctx.measureText(t).width) / 2, ty);
+    ty += lineH;
+  }
+}
+
+stage.addEventListener('pointerdown', e => {
+  if (!srcOK() || pureView || cmpOn) return;
+  if (e.target.closest('#plotpanel, #areapanel')) return;  // パネル内操作(移動・入力)は測定として扱わない
+  const p = toVideoPt(e);
+  if (roiMode()) {
+    if (mode === 'area' && (pickArmed || e.shiftKey)) {  // 目標色指定: 画素色を採色
+      const img = frameData();
+      const ix = Math.max(0, Math.min(srcW() - 1, Math.round(p.x))), iy = Math.max(0, Math.min(srcH() - 1, Math.round(p.y)));
+      const j = (iy * srcW() + ix) * 4;
+      cntTarget = { r: img.data[j], g: img.data[j + 1], b: img.data[j + 2] };
+      pickArmed = false; $('pickcolor').classList.remove('on');
+      $('cntswatch').style.background = `rgb(${cntTarget.r},${cntTarget.g},${cntTarget.b})`;
+      pixelCount();
+      return;
+    }
+    if (livePts.length >= 3) {
+      const d0 = Math.hypot(p.x - livePts[0].x, p.y - livePts[0].y);
+      const zoomPx = srcEl().offsetWidth / srcW();
+      if (d0 * zoomPx < 8) { closeArea(); return; }  // 最初の点に戻ったら閉じる
+    }
+    const hit = vertexHit(p);
+    if (hit) { dragPt = hit; stage.style.cursor = 'grabbing'; return; }  // 既存頂点を移動
+    livePts.push(p); drawOverlay(); return;
+  }
+  if (mode === 'pt') {
+    if (!refPt || refPt.key !== curKey()) { refPt = { x: p.x, y: p.y, key: curKey() }; }  // 基準点設定のみは無出力
+    else { ptList.push({ x: p.x, y: p.y, key: curKey() }); }
+    hover = null; drawOverlay(); return;
+  }
+  if (mode === 'shp') {
+    const kind = shpType;
+    if (shpPts.key && (shpPts.key !== curKey() || shpPts.kind !== kind)) shpPts = [];
+    shpPts.push(p); shpPts.key = curKey(); shpPts.kind = kind;
+    const need = shpNeed(kind);
+    if (shpPts.length >= need) {
+      const pts = [...shpPts.slice(0, need)];
+      let ok = true;
+      if (kind === 'circle') ok = !!circumCircle(pts[0], pts[1], pts[2]);
+      else if (kind === 'rect2') ok = Math.abs(pts[0].x - pts[1].x) >= 3 && Math.abs(pts[0].y - pts[1].y) >= 3;
+      else if (kind === 'square2') ok = vpxDist(pts[0], pts[1]) >= 3;
+      else { for (let i = 0; i < 4; i++) if (vpxDist(pts[i], pts[(i + 1) % 4]) < 3) ok = false; }
+      if (ok) { shapes.push({ kind, pts, key: curKey() }); }
+      else status.textContent = '形状が定義できない点の取り方です(ほぼ同一直線/辺が短すぎ)';
+      shpPts = [];
+    }
+    hover = null; drawOverlay(); return;
+  }
+  if (mode === 'ang') {
+    if (angPts.key && angPts.key !== curKey()) angPts = [];
+    angPts.push(p); angPts.key = curKey();
+    if (angPts.length === 3) {
+      const [a, b, c] = angPts;
+      if (vpxDist(a, b) > 2 && vpxDist(b, c) > 2)
+        angles.push({ a, b, c, key: curKey() });
+      angPts = [];
+      hover = null; drawOverlay(); return;
+    }
+    hover = null; drawOverlay(); return;
+  }
+  if (!pending) { pending = p; hover = p; drawOverlay(); return; }
+  const dpx = vpxDist(pending, p);
+  if (mode === 'cal') {
+    const input = prompt('その2点の実長さ (mm):', '10');
+    if (input !== null) {
+      const mm = parseFloat(input);
+      if (mm > 0 && dpx > 0) {
+        calMap[curKey()] = mm / dpx;
+        localStorage.setItem('micro-cal', JSON.stringify(calMap));
+        calSeg = { a: pending, b: p, mm, key: curKey() };
+        localStorage.setItem('micro-calseg', JSON.stringify(calSeg));
+        populateGridSteps();
+        setMode('dist');   // 校正完了後は測定モードへ自動で切り替え
+        calSegOn = true;  // 設定直後だけ較正線を表示(メニューのon表示は開時反映)
+      }
+    }
+  } else if (mode === 'line') {
+    lineSeg = { a: pending, b: p, key: curKey() };
+    pending = null; hover = null;
+    drawOverlay(); sampleLine(); return;
+  } else {
+    const mpp = mmPerPx();
+    meas.push({ a: pending, b: p, mm: mpp ? dpx * mpp : null });
+  }
+  pending = null; hover = null;
+  drawOverlay();
+});
+stage.addEventListener('pointermove', e => {
+  if (pureView) return;
+  if (roiMode()) {
+    if (dragPt) {
+      const p = toVideoPt(e);
+      if (dragPt.A) dragPt.A.pts[dragPt.vi] = p; else livePts[dragPt.vi] = p;
+      drawOverlay();
+      if (performance.now() - lastAreaT > 150) { lastAreaT = performance.now(); areaStats(); }
+      return;
+    }
+    stage.style.cursor = vertexHit(toVideoPt(e)) ? 'grab' : 'crosshair';
+    if (livePts.length) { areaHoverPt = toVideoPt(e); drawOverlay(); return; }
+    return;
+  }
+  if (pending) { hover = toVideoPt(e); drawOverlay(); }
+  else if (mode === 'pt' && refPt && refPt.key === curKey()) { hover = toVideoPt(e); drawOverlay(); }
+  else if (mode === 'ang' && angPts.length >= 1 && angPts.length < 3) { hover = toVideoPt(e); drawOverlay(); }
+  else if (mode === 'shp' && shpPts.length && shpPts.kind === shpType) { hover = toVideoPt(e); drawOverlay(); }
+});
+addEventListener('pointerup', () => {
+  if (dragPt) {
+    dragPt = null;
+    stage.style.cursor = 'grab';
+    drawOverlay(); areaStats();
+  }
+});
+
+function drawOverlay() {
+  overlay.width = innerWidth; overlay.height = stage.clientHeight;
+  const ctx = overlay.getContext('2d');
+  ctx.clearRect(0, 0, overlay.width, overlay.height);
+  if (!srcOK()) return;
+  if (gridOn) {
+    const mppG = mmPerPx();
+    const gv = $('gridstep').value || 'px';
+    const stepMm = (mppG && srcW() && gv !== 'px')
+      ? (gv === 'auto' ? autoGridMm(mppG) : parseFloat(gv)) : null;
+    if (stepMm > 0) {
+      // 物理間隔グリッド: 映像ネイティブpx空間で引き、回転/反転/ズームに追従
+      const g = stepMm / mppG, W = srcW(), H = srcH();
+      ctx.strokeStyle = gridColor + '73'; ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (let x = 0; x <= W + g * 0.01; x += g) {
+        const A = toStagePt(x, 0), B = toStagePt(x, H);
+        ctx.moveTo(A.x, A.y); ctx.lineTo(B.x, B.y);
+      }
+      for (let y = 0; y <= H + g * 0.01; y += g) {
+        const A = toStagePt(0, y), B = toStagePt(W, y);
+        ctx.moveTo(A.x, A.y); ctx.lineTo(B.x, B.y);
+      }
+      ctx.stroke();
+      ctx.font = OFS + 'px monospace';
+      ctx.fillStyle = 'rgba(0,0,0,.7)';
+      const lt = '格子 ' + fmtLen(stepMm);
+      ctx.fillRect(4, 4, ctx.measureText(lt).width + 8, OFS + 5);
+      ctx.fillStyle = gridColor + 'e6';
+      ctx.fillText(lt, 8, OFS + 4);
+    } else {
+      const w = overlay.width, h = overlay.height, cx = w / 2, cy = h / 2;
+      ctx.strokeStyle = gridColor + '80'; ctx.lineWidth = 1;
+      for (let x = cx % 50; x < w; x += 50) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke(); }
+      for (let y = cy % 50; y < h; y += 50) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
+      ctx.strokeStyle = 'rgba(255,60,60,.8)';
+      ctx.beginPath(); ctx.moveTo(cx-15,cy); ctx.lineTo(cx+15,cy);
+      ctx.moveTo(cx,cy-15); ctx.lineTo(cx,cy+15); ctx.stroke();
+    }
+  }
+  // ルーラー: 上辺と左辺に沿って目盛り(内側へ伸びる)。較正後=mm、未較正=px
+  if (rulerOn && srcW()) {
+    const mppR = mmPerPx(), W = srcW(), H = srcH();
+    const stepU = rulerStepU(mppR);
+    const stepN = mppR ? stepU / mppR : stepU;   // 目盛りの大間隔(px)
+    if (stepN >= 2) {
+      ctx.strokeStyle = 'rgba(255,255,255,.75)'; ctx.lineWidth = 1;
+      ctx.font = OFS + 'px monospace'; ctx.fillStyle = 'rgba(255,255,255,.85)';
+      for (const edge of [[1, 0], [0, 1]]) {  // 上辺 / 左辺
+        const ax = edge[0];
+        const span = ax ? W : H;
+        const eps = Math.max(1, span / 4000);
+        for (let v = 0; v * stepN <= span + 1; v++) {
+          const pos = v * stepN;
+          const bx = ax ? pos : 0, by = ax ? 0 : pos;
+          const P = toStagePt(bx, by);
+          const Q = toStagePt(bx + (ax ? 0 : eps), by + (ax ? eps : 0));  // 画像内側への微小移動
+          let nx = Q.x - P.x, ny = Q.y - P.y;
+          const nl = Math.hypot(nx, ny) || 1; nx /= nl; ny /= nl;
+          const major = v % 5 === 0, len = major ? 12 : 6;
+          ctx.beginPath(); ctx.moveTo(P.x, P.y);
+          ctx.lineTo(P.x + nx * len, P.y + ny * len); ctx.stroke();
+          if (major) {
+            const mm = mppR ? v * stepN * mppR : null;
+            const t = mm != null ? (v === 0 ? '0' : fmtLen(mm)) : (v * stepN) + 'px';
+            const tw = ctx.measureText(t).width;
+            ctx.fillStyle = 'rgba(0,0,0,.55)';
+            ctx.fillRect(P.x + nx * (len + 2) - tw / 2, P.y + ny * (len + 2) - 7, tw + 4, 14);
+            ctx.fillStyle = 'rgba(255,255,255,.9)';
+            ctx.fillText(t, P.x + nx * (len + 4) - tw / 2, P.y + ny * (len + 4) + 4);
+          }
+        }
+      }
+    }
+  }
+  // 測定ライン(画像のみモードでは解析結果を描画しない)
+  if (!pureView) {
+  const lines = [...meas];
+  if (pending && hover) {
+    const mpp0 = mmPerPx(), d0 = vpxDist(pending, hover);
+    lines.push({ a: pending, b: hover, mm: mpp0 ? d0 * mpp0 : null, live: true });
+  }
+  if (calSeg && calSegOn && calSeg.key === curKey()) lines.push({ a: calSeg.a, b: calSeg.b, mm: calSeg.mm, cal: true });
+  if (lineSeg && lineSeg.key === curKey()) {
+    const dpX = vpxDist(lineSeg.a, lineSeg.b), mpX = mmPerPx();
+    lines.push({ a: lineSeg.a, b: lineSeg.b, mm: mpX ? dpX * mpX : null, line: true });
+  }
+  for (const L of lines) {
+    const A = toStagePt(L.a.x, L.a.y), B = toStagePt(L.b.x, L.b.y);
+    ctx.strokeStyle = L.cal ? 'rgba(120,170,255,.95)' : L.line ? 'rgba(255,120,255,.95)' : L.live ? 'rgba(255,80,80,.9)' : 'rgba(80,220,120,.9)';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(A.x, A.y); ctx.lineTo(B.x, B.y); ctx.stroke();
+    for (const P of [A, B]) { ctx.beginPath(); ctx.arc(P.x, P.y, 3, 0, 7); ctx.stroke(); }
+    const dpx = Math.round(vpxDist(L.a, L.b));
+    const txt = (L.cal ? '較正 ' : L.line ? '分析 ' : '') + (L.mm != null ? L.mm.toFixed(2) + ' mm' : '較正なし') + ` (${dpx}px)`;
+    ctx.font = OFS + 'px monospace';
+    ctx.fillStyle = 'rgba(0,0,0,.7)';
+    const tw = ctx.measureText(txt).width;
+    const mx = (A.x + B.x) / 2, my = (A.y + B.y) / 2;
+    ctx.fillRect(mx - tw / 2 - 4, my - 18, tw + 8, 17);
+    ctx.fillStyle = '#ffd76a';
+    ctx.fillText(txt, mx - tw / 2, my - 5);
+  }
+  // 面分析/粒子解析: ROI多角形(+粒子解析は成分、面分析は色カウント)
+  if (roiMode() || validAreas().length) {
+    const As = validAreas();
+    for (let ai = 0; ai < As.length; ai++) {
+      const A = As[ai];
+      const sp = A.pts.map(q => toStagePt(q.x, q.y));
+      ctx.beginPath();
+      sp.forEach((P, i) => i ? ctx.lineTo(P.x, P.y) : ctx.moveTo(P.x, P.y));
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(255,179,71,.12)'; ctx.fill();
+      ctx.strokeStyle = 'rgba(255,179,71,.9)'; ctx.lineWidth = 2; ctx.stroke();
+      for (const P of sp) { ctx.beginPath(); ctx.arc(P.x, P.y, 3, 0, 7); ctx.stroke(); }
+      const area = polyAreaPx2(A.pts), mppA = mmPerPx();
+      let lt = 'ROI ' + (mppA ? fmtArea2(area * mppA * mppA) : area.toFixed(0) + ' px²');
+      if (mode === 'area' && cntResult && cntResult.per[ai])
+        lt += ' → ' + cntResult.per[ai].matched + ' px' + (mppA ? ' (' + (cntResult.per[ai].matched * mppA * mppA).toFixed(2) + ' mm²)' : '');
+      ctx.font = OFS + 'px monospace';
+      const tw = ctx.measureText(lt).width;
+      const cx0 = sp.reduce((s, P) => s + P.x, 0) / sp.length, cy0 = sp.reduce((s, P) => s + P.y, 0) / sp.length;
+      ctx.fillStyle = 'rgba(0,0,0,.7)'; ctx.fillRect(cx0 - tw / 2 - 4, cy0 - 18, tw + 8, 17);
+      ctx.fillStyle = '#ffb347'; ctx.fillText(lt, cx0 - tw / 2, cy0 - 5);
+    }
+    if (livePts.length) {  // 編集プレビュー
+      const sp = livePts.map(q => toStagePt(q.x, q.y));
+      const hp = areaHoverPt && roiMode() ? [toStagePt(areaHoverPt.x, areaHoverPt.y)] : [];
+      ctx.strokeStyle = 'rgba(255,179,71,.7)'; ctx.lineWidth = 1.5; ctx.setLineDash([5, 4]);
+      ctx.beginPath();
+      sp.forEach((P, i) => i ? ctx.lineTo(P.x, P.y) : ctx.moveTo(P.x, P.y));
+      for (const P of hp) ctx.lineTo(P.x, P.y);
+      ctx.stroke(); ctx.setLineDash([]);
+      for (const P of sp) { ctx.beginPath(); ctx.arc(P.x, P.y, 3, 0, 7); ctx.stroke(); }
+    }
+    const cfs = OFS;
+    ctx.font = cfs + 'px monospace';
+    for (let i = 0; mode === 'part' && i < areaComps.length; i++) {
+      const o = areaComps[i];
+      const P1 = toStagePt(o.x1, o.y1), P2 = toStagePt(o.x2, o.y2);
+      ctx.strokeStyle = 'rgba(80,220,120,.8)'; ctx.lineWidth = 1;
+      ctx.strokeRect(Math.min(P1.x, P2.x), Math.min(P1.y, P2.y), Math.abs(P2.x - P1.x), Math.abs(P2.y - P1.y));
+      const C = toStagePt(o.cx, o.cy);
+      ctx.beginPath(); ctx.moveTo(C.x - 5, C.y); ctx.lineTo(C.x + 5, C.y);
+      ctx.moveTo(C.x, C.y - 5); ctx.lineTo(C.x, C.y + 5); ctx.stroke();
+      const num = String(i + 1);
+      ctx.fillStyle = 'rgba(0,0,0,.75)'; ctx.fillRect(C.x + 6, C.y - cfs, ctx.measureText(num).width + 4, cfs + 2);
+      ctx.fillStyle = '#7fe89f'; ctx.fillText(num, C.x + 8, C.y - 2);
+    }
+  }
+  // 点分析: 基準点クロスマークと相対距離(破線=移動プレビュー)
+  if (refPt && refPt.key === curKey()) {
+    const R = toStagePt(refPt.x, refPt.y);
+    ctx.strokeStyle = '#4dd2ff'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(R.x, R.y, 8, 0, 7); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(R.x - 13, R.y); ctx.lineTo(R.x + 13, R.y);
+    ctx.moveTo(R.x, R.y - 13); ctx.lineTo(R.x, R.y + 13); ctx.stroke();
+    ctx.font = OFS + 'px monospace'; ctx.fillStyle = '#4dd2ff';
+    ctx.fillText('基準', R.x + 11, R.y - 11);
+    const pts = ptList.filter(q => q.key === curKey());
+    if (mode === 'pt' && hover && hover !== areaHoverPt) pts.push({ x: hover.x, y: hover.y, live: true });
+    const mppP = mmPerPx();
+    for (const q of pts) {
+      const P = toStagePt(q.x, q.y);
+      const dx = q.x - refPt.x, dy = q.y - refPt.y;
+      const dpx = Math.hypot(dx, dy);
+      const ang = (Math.atan2(dy, dx) * 180 / Math.PI + 360) % 360;  // 画面方向と一致(+X右, Y下, 時計回り正)
+      ctx.strokeStyle = q.live ? 'rgba(77,210,255,.5)' : 'rgba(77,210,255,.85)';
+      if (q.live) ctx.setLineDash([5, 4]);
+      ctx.beginPath(); ctx.moveTo(R.x, R.y); ctx.lineTo(P.x, P.y); ctx.stroke();
+      ctx.setLineDash([]);
+      // ベクトル矢頭(点側)
+      const ul = Math.hypot(P.x - R.x, P.y - R.y) || 1;
+      const ux = (P.x - R.x) / ul, uy = (P.y - R.y) / ul;
+      ctx.beginPath();
+      ctx.moveTo(P.x, P.y); ctx.lineTo(P.x - ux * 9 - uy * 4.5, P.y - uy * 9 + ux * 4.5);
+      ctx.moveTo(P.x, P.y); ctx.lineTo(P.x - ux * 9 + uy * 4.5, P.y - uy * 9 - ux * 4.5);
+      ctx.stroke();
+      ctx.beginPath(); ctx.arc(P.x, P.y, 3, 0, 7); ctx.stroke();
+      const f = mppP ? (v) => (v * mppP).toFixed(2) : (v) => String(Math.round(v));
+      const unit = mppP ? 'mm' : 'px';
+      const sign = (v) => (v >= 0 ? '+' : '') + f(v);
+      const t1 = `Δx ${sign(dx)} Δy ${sign(dy)} ${unit}`;
+      const t2 = mppP ? `|v| ${(dpx * mppP).toFixed(2)} mm ∠${ang.toFixed(2)}°`
+                      : `|v| ${Math.round(dpx)} px ∠${ang.toFixed(2)}°`;
+      const tw = Math.max(ctx.measureText(t1).width, ctx.measureText(t2).width);
+      ctx.fillStyle = 'rgba(0,0,0,.7)'; ctx.fillRect(P.x + 6, P.y - 36, tw + 8, 34);
+      ctx.fillStyle = '#8fe0ff';
+      ctx.fillText(t1, P.x + 10, P.y - 21);
+      ctx.fillText(t2, P.x + 10, P.y - 6);
+    }
+  }
+  // 角度解析: 登録済みと入力プレビュー
+  for (const o of angles.filter(q => q.key === curKey())) {
+    ctx.strokeStyle = 'rgba(255,179,71,.95)'; ctx.lineWidth = 2;
+    drawAngleShape(ctx, toStagePt(o.a.x, o.a.y), toStagePt(o.b.x, o.b.y), toStagePt(o.c.x, o.c.y),
+                   angDeg(o.a, o.b, o.c), false, false, OFS);
+  }
+  if (mode === 'ang' && angPts.length && angPts.key === curKey()) {
+    if (angPts.length === 1) {
+      const A = toStagePt(angPts[0].x, angPts[0].y);
+      ctx.strokeStyle = 'rgba(255,179,71,.6)'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(A.x, A.y, 4, 0, 7); ctx.stroke();
+    } else {
+      const cSrc = angPts.length === 3 ? angPts[2] : (hover && hover !== areaHoverPt ? hover : null);
+      if (cSrc) {
+        ctx.strokeStyle = 'rgba(255,179,71,.6)'; ctx.lineWidth = 2;
+        drawAngleShape(ctx, toStagePt(angPts[0].x, angPts[0].y), toStagePt(angPts[1].x, angPts[1].y),
+                       toStagePt(cSrc.x, cSrc.y), angDeg(angPts[0], angPts[1], cSrc), true, false, OFS);
+      }
+    }
+  }
+  // 形状測定: 登録済みと入力プレビュー
+  for (const s of shapes.filter(q => q.key === curKey()))
+    drawShapeShape(ctx, s, (x, y) => toStagePt(x, y), false, OFS);
+  if (mode === 'shp' && shpPts.length && shpPts.key === curKey()) {
+    const kind = shpType, need = shpNeed(kind);
+    let poly = [...shpPts];
+    if ((kind === 'rect2' || kind === 'square2') && poly.length === 1 && hover)
+      poly = shapeCorners({ kind, pts: [poly[0], hover] });
+    else if (hover && poly.length < need) poly.push(hover);
+    ctx.strokeStyle = 'rgba(160,190,230,.6)'; ctx.lineWidth = 2; ctx.setLineDash([5, 4]);
+    ctx.beginPath();
+    poly.forEach((q, i) => { const P = toStagePt(q.x, q.y); i ? ctx.lineTo(P.x, P.y) : ctx.moveTo(P.x, P.y); });
+    ctx.stroke(); ctx.setLineDash([]);
+    for (const q of shpPts) { const P = toStagePt(q.x, q.y); ctx.beginPath(); ctx.arc(P.x, P.y, 3, 0, 7); ctx.stroke(); }
+  }
+  }  // pureViewガード終わり
+  // スケールバー(右下角)
+  const mpp = mmPerPx();
+  if (scaleBarOn && mpp && srcW()) {
+    const vr = srcEl().getBoundingClientRect(), sr = stage.getBoundingClientRect();
+    const x2 = Math.min(vr.right, sr.right) - sr.left - 12;
+    const y2 = Math.min(vr.bottom, sr.bottom) - sr.top - 12;
+    const disp = (srcEl().offsetWidth / srcW()) * zoom;
+    drawScaleBar(overlay.getContext('2d'), mpp, mm => mm / mpp * disp, x2, y2, OFS, scaleInfoLines());
+  }
+  drawProgressMark(ctx);
+}
+// ---- 進捗マーカー(画面のみ・PNG焼き込みには含めない): 動画撮影・間隔撮影の進行表示 ----
+function fmtMS(s) { const m = Math.floor(s / 60), r = s - m * 60; return String(m).padStart(2, '0') + ':' + (r < 10 ? '0' : '') + r.toFixed(1); }
+function drawProgressMark(ctx) {
+  const recActive = rec && rec.state === 'recording';
+  const tlActive = !!tincT;
+  if (!recActive && !tlActive) return;
+  const vr = srcEl().getBoundingClientRect(), sr = stage.getBoundingClientRect();
+  if (vr.width < 40) return;
+  const bx = Math.max(vr.left, sr.left) - sr.left, by = Math.max(vr.top, sr.top) - sr.top;
+  const x0 = bx + 14, y0 = by + 14 + OFS;
+  const fs = OFS;
+  ctx.font = fs + 'px monospace';
+  let txt, frac = null;
+  if (recActive) {
+    const el = (Date.now() - recT0) / 1000;
+    txt = 'REC ' + fmtMS(el);
+    if (recTotalS) frac = Math.min(1, el / recTotalS);
+  } else {
+    txt = tincMode === 'tl' ? `TL ${tincN}/${tincMax}` : `間隔 ${tincN}枚`;
+    if (tincMax) frac = Math.min(1, tincN / tincMax);
+  }
+  const w = ctx.measureText(txt).width, pad = 6;
+  ctx.fillStyle = 'rgba(0,0,0,.85)';
+  ctx.fillRect(x0 - pad, y0 - fs - pad + 2, w + fs + pad * 2 + 6, fs + pad * 2);
+  const blink = recActive && (Math.floor(Date.now() / 500) % 2 === 0);
+  ctx.fillStyle = recActive ? (blink ? '#fff' : '#e33') : '#fb0';
+  ctx.beginPath(); ctx.arc(x0 + 5, y0 - fs * 0.35, 5, 0, 7); ctx.fill();
+  ctx.fillStyle = '#fff';
+  ctx.fillText(txt, x0 + fs + 4, y0);
+  if (frac !== null) {  // 総量がknownのとき上端に進行バー
+    const bw = Math.min(vr.width, sr.width - bx);
+    ctx.fillStyle = 'rgba(0,0,0,.6)'; ctx.fillRect(bx, by, bw, 5);
+    ctx.fillStyle = recActive ? '#e33' : '#fb0'; ctx.fillRect(bx, by, bw * frac, 5);
+  }
+}
+
+let focusVal = 0;  // 直近の合焦指標(ステータス表示用)
+function focusMetric() {  // 合焦指標: 480px幅に縮小した輝度のラプラシアンRMS。大きいほど合焦
+  if (!srcOK()) return 0;
+  const w = 480, h = Math.max(2, Math.round(480 * srcH() / srcW()));
+  if (!focusMetric.c) focusMetric.c = document.createElement('canvas');
+  const c = focusMetric.c;
+  if (c.width !== w || c.height !== h) { c.width = w; c.height = h; }
+  const g = c.getContext('2d', { willReadFrequently: true });
+  g.drawImage(srcEl(), 0, 0, w, h);
+  const d = g.getImageData(0, 0, w, h).data;
+  const L = new Float32Array(w * h);
+  for (let i = 0, j = 0; i < d.length; i += 4, j++) L[j] = .33 * d[i] + .5 * d[i + 1] + .16 * d[i + 2];
+  let s = 0, n = 0;
+  for (let y = 1; y < h - 1; y++) for (let x = 1; x < w - 1; x++) {
+    const k = y * w + x, lp = L[k - 1] + L[k + 1] + L[k - w] + L[k + w] - 4 * L[k];
+    s += lp * lp; n++;
+  }
+  return n ? Math.round(Math.sqrt(s / n)) : 0;
+}
+function focusBar(v) {  // 対数スケール0-9本(実測の目安: ぼけ<5、合焦で数十-数百)
+  const lv = v <= 0 ? 0 : Math.min(9, Math.floor(Math.log2(v) * 1.8));
+  return '▰'.repeat(lv) + '▱'.repeat(9 - lv);
+}
+function fpsLoop(t) {
+  if (!stream) return;
+  if ((rec && rec.state === 'recording') || tincT) drawOverlay();  // 進捗マーカーの毎フレーム更新
+  const now = performance.now();
+  if (now - lastFpsT > 1000) {
+    const tr = stream.getVideoTracks()[0].getSettings();
+    const mpp = mmPerPx();
+    status.textContent = `${tr.width}×${tr.height} @ ${fpsCount}fps ` +
+      `rotate=${rot}° mirror=${mirrored ? 'on' : 'off'} zoom=×${zoom} ` +
+      `校正=${mpp ? mpp.toFixed(5) + ' mm/px' : '未校正'} mode=${mode === 'view' ? '画像のみ' : mode === 'cal' ? '校正' : mode === 'line' ? '線分析' : mode === 'area' ? '面分析' : mode === 'part' ? '粒子解析' : mode === 'pt' ? '点分析' : mode === 'ang' ? '角度' : mode === 'shp' ? '形状測定' : '2点間距離'} ` +
+      `フォーカス:${focusVal} ${focusBar(focusVal)}`;
+    focusVal = focusMetric();
+    fpsCount = 0; lastFpsT = now;
+  }
+  requestAnimationFrame(fpsLoop);
+}
+// 実際の映像フレームのみをカウント（rAFの60Hzではなく）
+function countFrames() {
+  if (!stream) return;
+  video.requestVideoFrameCallback(() => {
+    fpsCount++;
+    if (fxNeeded()) renderGL();
+    if (recVTrack) recBakeFrame();
+    if (cmpOn) cmpDraw();
+    if (mode === 'line' && lineSeg && lineSeg.key === curKey()) sampleLine();
+    if (roiMode() && validAreas().length && performance.now() - lastAreaT > 600) {
+      lastAreaT = performance.now();
+      if (mode === 'part') { areaStats(); drawOverlay(); } else pixelCount();
+    }
+    countFrames();
+  });
+}
+
+function sampleLine() {  // A-B線分上の輝度を1px間隔で採取(線分bboxのみ読取り)
+  if (!lineSeg || lineSeg.key !== curKey() || !srcOK()) return;
+  const a = lineSeg.a, b = lineSeg.b, d = vpxDist(a, b);
+  if (d < 1) return;
+  const N = Math.min(Math.ceil(d), 4096);
+  const W = srcW(), H = srcH();
+  const x0 = Math.max(0, Math.floor(Math.min(a.x, b.x)) - 1);
+  const y0 = Math.max(0, Math.floor(Math.min(a.y, b.y)) - 1);
+  const w = Math.min(W - x0, Math.ceil(Math.abs(b.x - a.x)) + 3);
+  const h = Math.min(H - y0, Math.ceil(Math.abs(b.y - a.y)) + 3);
+  if (!sampleLine.c) sampleLine.c = document.createElement('canvas');
+  const c = sampleLine.c;
+  if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
+  const g = c.getContext('2d', { willReadFrequently: true });
+  drawSrcToned(g, W, H);
+  const img = g.getImageData(x0, y0, w, h).data;
+  const prof = new Float32Array(N + 1);
+  for (let i = 0; i <= N; i++) {
+    const t = i / N;
+    const px = Math.round(a.x + (b.x - a.x) * t) - x0;
+    const py = Math.round(a.y + (b.y - a.y) * t) - y0;
+    const j = (py * w + px) * 4;
+    const fCh = CHAN_F[chan];  // 選択チャンネル(B/(R+G)等)で採線。RGB(all)のみ輝度
+    prof[i] = fCh ? Math.max(0, Math.min(255, fCh(img[j], img[j + 1], img[j + 2])))
+                  : 0.33 * img[j] + 0.5 * img[j + 1] + 0.16 * img[j + 2];
+  }
+  drawPlot(prof, N, d);
+  lineProf = { a: { x: a.x, y: a.y }, b: { x: b.x, y: b.y }, prof, N, d, key: curKey() };
+}
+function drawPlot(prof, N, d) {  // X=距離(mm較正時はmm、無ければpx)、Y=輝度0-255
+  const ctx = plotc.getContext('2d'), W = plotc.width, H = plotc.height;
+  const ml = 34, mr = 8, mt = 16, mb = 26;
+  const pw = W - ml - mr, ph = H - mt - mb;
+  const VMAX = 300;  // 表示軸は0-300(信号自体は0-255)
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#0a0a0a'; ctx.fillRect(ml, mt, pw, ph);
+  ctx.font = '10px monospace';
+  for (const v of [0, 100, 200, 300]) {
+    const y = mt + ph * (1 - v / VMAX);
+    ctx.strokeStyle = v === 0 ? '#555' : '#2a2a2a';
+    ctx.beginPath(); ctx.moveTo(ml, y); ctx.lineTo(W - mr, y); ctx.stroke();
+    ctx.fillStyle = '#777'; ctx.fillText(String(v), 4, y + 3);
+  }
+  {  // 信号最大値255の基準線(破線)
+    const y = mt + ph * (1 - 255 / VMAX);
+    ctx.strokeStyle = '#555'; ctx.setLineDash([3, 3]);
+    ctx.beginPath(); ctx.moveTo(ml, y); ctx.lineTo(W - mr, y); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#666'; ctx.fillText('255', W - mr - 20, y - 2);
+  }
+  const mpp = mmPerPx();
+  const xEnd = mpp ? d * mpp : d, unit = mpp ? 'mm' : 'px';
+  const fmt = v => mpp ? v.toFixed(2) : String(Math.round(v));
+  for (let i = 0; i <= 4; i++) {
+    const x = ml + pw * i / 4;
+    ctx.strokeStyle = '#222';
+    ctx.beginPath(); ctx.moveTo(x, mt); ctx.lineTo(x, mt + ph); ctx.stroke();
+    ctx.fillStyle = '#777';
+    const s = fmt(xEnd * i / 4);
+    ctx.fillText(s, Math.min(Math.max(x - ctx.measureText(s).width / 2, ml), W - mr - ctx.measureText(s).width), H - 12);
+  }
+  ctx.strokeStyle = '#4dd'; ctx.lineWidth = 1.5; ctx.beginPath();
+  for (let i = 0; i <= N; i++) {
+    const x = ml + pw * i / N, y = mt + ph * (1 - Math.min(prof[i], VMAX) / VMAX);
+    i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+  }
+  ctx.stroke();
+  // エッジ検出: プロファイル勾配(|dY/dx|)のピーク位置をX数値でグラフ内表示
+  {
+    const g = new Float64Array(N + 1);
+    for (let i = 0; i <= N; i++) {
+      const l = prof[Math.max(0, i - 1)], r = prof[Math.min(N, i + 1)];
+      g[i] = Math.abs(r - l) / ((Math.min(N, i + 1) - Math.max(0, i - 1)) || 1);
+    }
+    const gs = g.map((v, i) => (v + g[Math.max(0, i - 1)] + g[Math.min(N, i + 1)]) / 3);  // 3点平滑でノイズ抑制
+    const thr = Math.max(1, lineEdgeThr);  // 設定可能なエッジ閾値(0-255域)
+    const minSep = Math.max(2, Math.round(N / 100));
+    const peaks = [];
+    for (let i = 1; i < N; i++) {
+      if (gs[i] < thr) continue;
+      const lo = Math.max(0, i - 3), hi = Math.min(N, i + 3);
+      if (gs[i] < Math.max(...gs.slice(lo, i)) || gs[i] <= Math.max(...gs.slice(i + 1, hi + 1))) continue;  // 局部最大のみ
+      if (peaks.length && i - peaks[peaks.length - 1] < minSep) {
+        if (gs[i] > gs[peaks[peaks.length - 1]]) peaks[peaks.length - 1] = i;
+      } else peaks.push(i);
+    }
+    lineEdgeX = peaks.map(i => ({ i, dpx: d * i / N, g: gs[i] }));  // 線分上の位置px(出力時単位変換)
+    ctx.font = '10px monospace';
+    peaks.slice(0, 24).forEach((i, k) => {
+      const x = ml + pw * i / N;
+      ctx.strokeStyle = 'rgba(255,110,110,.8)'; ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
+      ctx.beginPath(); ctx.moveTo(x, mt); ctx.lineTo(x, mt + ph); ctx.stroke();
+      ctx.setLineDash([]);
+      const t = fmt(xEnd * i / N);
+      const ty = mt + 10 + (k % 2) * 12;  // 隣り合う値札をずらして重なり回避
+      const tx = Math.min(Math.max(x - ctx.measureText(t).width / 2, ml + 1), W - mr - ctx.measureText(t).width - 1);
+      ctx.fillStyle = 'rgba(0,0,0,.7)'; ctx.fillRect(tx - 1, ty - 9, ctx.measureText(t).width + 2, 11);
+      ctx.fillStyle = '#f88'; ctx.fillText(t, tx, ty);
+    });
+  }
+  ctx.fillStyle = '#9ab';
+  const yName = chan === 'all' ? '輝度' : (CHAN_LABELS[chan] || '輝度');
+  ctx.fillText(`A→B ${fmt(xEnd)} ${unit} (${Math.round(d)}px)  Y:${yName}0-300(信号255上限)  X:${unit}  エッジ:${(lineEdgeX || []).length}(閾${lineEdgeThr})`, ml, 11);
+}
+
+function edgePixels(ctx, w, h) {  // PNGスナップショットにLaplacianエッジを検出(fEdgeと同じ核)
+  if (!edgeOn) return;
+  const src = ctx.getImageData(0, 0, w, h).data;
+  const lum = new Uint8ClampedArray(w * h);
+  for (let i = 0, p = 0; i < src.length; i += 4, p++)
+    lum[p] = 0.33 * src[i] + 0.5 * src[i + 1] + 0.16 * src[i + 2];
+  const img = ctx.getImageData(0, 0, w, h), d = img.data;
+  for (let y = 0; y < h; y++) {
+    const yu = (y > 0 ? y - 1 : 0) * w, yd = (y < h - 1 ? y + 1 : h - 1) * w, yc = y * w;
+    for (let x = 0; x < w; x++) {
+      const xl = x > 0 ? x - 1 : 0, xr = x < w - 1 ? x + 1 : w - 1;
+      const c = yc + x;
+      const v = Math.max(0, Math.min(255, 4 * lum[c] - lum[yu + x] - lum[yd + x] - lum[yc + xl] - lum[yc + xr]));
+      const i = c * 4;
+      d[i] = d[i + 1] = d[i + 2] = v;
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+}
+
+const CHAN_F = {  // 0-255域の数式チャンネル(PNGスナップショット用。GL側は0-1の同式)
+  r: (r, g, b) => r, g: (r, g, b) => g, b: (r, g, b) => b,
+  rg: (r, g, b) => (r + g) * 0.5,
+  renh: (r, g, b) => (r - g - b + 510) / 3,
+  genh: (r, g, b) => 255 * g / (r + g + b + 1),
+  exg: (r, g, b) => (2 * g - r - b + 510) / 4,
+  ridx: (r, g, b) => 255 * r / (r + g + 1),
+  gidx: (r, g, b) => 255 * g / (g + b + 1),
+  bidx: (r, g, b) => 255 * b / (r + g + 1),
+  pgray: (r, g, b) => (r + 2 * g + b) / 4
+};
+function chanPixels(ctx, w, h) {  // PNGスナップショットにチャンネル/指標変換を適用
+  if (chan === 'all') return;
+  const f = CHAN_F[chan];
+  if (!f) return;
+  const img = ctx.getImageData(0, 0, w, h), d = img.data;
+  for (let i = 0; i < d.length; i += 4) {
+    const v = Math.max(0, Math.min(255, f(d[i], d[i + 1], d[i + 2])));
+    d[i] = d[i + 1] = d[i + 2] = v;
+  }
+  ctx.putImageData(img, 0, 0);
+}
+
+// ---- 解析描画のインポーズ(静止画bakeと動画録画で共用)。ctxは画像中心変換済み、cは対象canvas ----
+function bakeAnalysisDraw(ctx, c, tr, analysis) {
+  const lw = Math.max(2, tr.width / 800), fs = Math.max(14, tr.width / 60);
+  // 表示中の物理グリッド
+  if (gridOn) {
+    const gv = $('gridstep').value || 'px', mppG = mmPerPx();
+    if (mppG && gv !== 'px') {
+      const stepMm = gv === 'auto' ? autoGridMm(mppG) : parseFloat(gv);
+      if (stepMm > 0) {
+        const g = stepMm / mppG;
+        ctx.strokeStyle = gridColor + '73'; ctx.lineWidth = Math.max(1, lw / 2);
+        ctx.beginPath();
+        for (let x = 0; x <= tr.width + g * 0.01; x += g) {
+          ctx.moveTo(x - tr.width / 2, -tr.height / 2); ctx.lineTo(x - tr.width / 2, tr.height / 2);
+        }
+        for (let y = 0; y <= tr.height + g * 0.01; y += g) {
+          ctx.moveTo(-tr.width / 2, y - tr.height / 2); ctx.lineTo(tr.width / 2, y - tr.height / 2);
+        }
+        ctx.stroke();
+      }
+    }
+  }
+  // 表示中のルーラー(目盛り線。ラベルは下流のmapSで画像回転と無関係な向きで)
+  const rulerStepN = (() => {
+    const mppR = mmPerPx(), U = rulerStepU(mppR);
+    return mppR ? U / mppR : U;
+  })();
+  if (rulerOn && rulerStepN >= 2) {
+    ctx.strokeStyle = 'rgba(255,255,255,.75)'; ctx.lineWidth = Math.max(1, lw / 2);
+    const tl0 = Math.max(6, tr.width / 300);
+    for (const edge of [[1, 0], [0, 1]]) {
+      const span = edge[0] ? tr.width : tr.height;
+      for (let v = 0; v * rulerStepN <= span + 1; v++) {
+        const pos = v * rulerStepN;
+        const X = edge[0] ? pos - tr.width / 2 : -tr.width / 2;
+        const Y = edge[0] ? -tr.height / 2 : pos - tr.height / 2;
+        const len = (v % 5 === 0 ? 1.6 : 0.8) * tl0;
+        ctx.beginPath(); ctx.moveTo(X, Y);
+        ctx.lineTo(X + (edge[0] ? 0 : len), Y + (edge[0] ? len : 0)); ctx.stroke();
+      }
+    }
+  }
+  ctx.strokeStyle = 'rgba(80,220,120,.95)'; ctx.lineWidth = lw;
+  ctx.font = fs + 'px monospace';
+  const allL = analysis ? [...meas] : [];
+  if (calSeg && calSegOn && calSeg.key === curKey()) allL.push({ a: calSeg.a, b: calSeg.b, mm: calSeg.mm, cal: true });
+  if (analysis && lineSeg && lineSeg.key === curKey()) allL.push({ a: lineSeg.a, b: lineSeg.b, mm: mmPerPx() ? vpxDist(lineSeg.a, lineSeg.b) * mmPerPx() : null, line: true });
+  for (const m of allL) {
+    if (m.cal) ctx.strokeStyle = 'rgba(120,170,255,.95)';
+    else if (m.line) ctx.strokeStyle = 'rgba(255,120,255,.95)';
+    ctx.beginPath();
+    ctx.moveTo(m.a.x - tr.width / 2, m.a.y - tr.height / 2);
+    ctx.lineTo(m.b.x - tr.width / 2, m.b.y - tr.height / 2);
+    ctx.stroke();
+    const t = (m.cal ? '較正 ' : m.line ? '分析 ' : '') + (m.mm != null ? m.mm.toFixed(2) + ' mm' : '');
+    ctx.fillStyle = '#ffd76a';
+    const tx = (m.a.x + m.b.x) / 2 - tr.width / 2, ty = (m.a.y + m.b.y) / 2 - tr.height / 2 - fs / 3;
+    if (mirrored) {  // 反転時は文字だけ戻して読むようにする
+      ctx.save(); ctx.scale(-1, 1); ctx.fillText(t, -tx, ty); ctx.restore();
+    } else ctx.fillText(t, tx, ty);
+  }
+  // 領域測定の焼き込み: ROI輪郭+成分番号+統計ブロック
+  for (const A of (analysis ? validAreas() : [])) {
+    ctx.beginPath();
+    A.pts.forEach((q, i) => {
+      const X = q.x - tr.width / 2, Y = q.y - tr.height / 2;
+      i ? ctx.lineTo(X, Y) : ctx.moveTo(X, Y);
+    });
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(255,179,71,.12)'; ctx.fill();
+    ctx.strokeStyle = 'rgba(255,179,71,.9)'; ctx.lineWidth = 2; ctx.stroke();
+  }
+  // 点分析焼き込み: 基準+相対座標・ベクトル
+  if (analysis && refPt && refPt.key === curKey()) {
+    const mppP = mmPerPx();
+    ctx.strokeStyle = 'rgba(77,210,255,.95)'; ctx.lineWidth = lw;
+    const RX = refPt.x - tr.width / 2, RY = refPt.y - tr.height / 2;
+    ctx.beginPath(); ctx.arc(RX, RY, fs / 2, 0, 7); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(RX - fs, RY); ctx.lineTo(RX + fs, RY);
+    ctx.moveTo(RX, RY - fs); ctx.lineTo(RX, RY + fs); ctx.stroke();
+    for (const q of ptList.filter(q2 => q2.key === curKey())) {
+      const PX = q.x - tr.width / 2, PY = q.y - tr.height / 2;
+      const dx = q.x - refPt.x, dy = q.y - refPt.y;
+      const dpx = Math.hypot(dx, dy);
+      const ang = (Math.atan2(dy, dx) * 180 / Math.PI + 360) % 360;  // 画面方向一致(Y下, 時計回り正)
+      ctx.beginPath(); ctx.moveTo(RX, RY); ctx.lineTo(PX, PY); ctx.stroke();
+      const ul = Math.hypot(PX - RX, PY - RY) || 1;
+      const ux = (PX - RX) / ul, uy = (PY - RY) / ul;
+      const hs = Math.max(8, tr.width / 200);
+      ctx.beginPath();
+      ctx.moveTo(PX, PY); ctx.lineTo(PX - ux * hs - uy * hs * 0.5, PY - uy * hs + ux * hs * 0.5);
+      ctx.moveTo(PX, PY); ctx.lineTo(PX - ux * hs + uy * hs * 0.5, PY - uy * hs - ux * hs * 0.5);
+      ctx.stroke();
+      const fm = mppP ? (v) => (v >= 0 ? '+' : '') + (v * mppP).toFixed(2) : (v) => (v >= 0 ? '+' : '') + Math.round(v);
+      const t1 = mppP ? `Δx ${fm(dx)} Δy ${fm(dy)} mm` : `Δx ${fm(dx)} Δy ${fm(dy)} px`;
+      const t2 = mppP ? `|v| ${(dpx * mppP).toFixed(2)} mm ∠${ang.toFixed(2)}°`
+                      : `|v| ${Math.round(dpx)} px ∠${ang.toFixed(2)}°`;
+      const mx2 = (RX + PX) / 2, my2 = (RY + PY) / 2;
+      ctx.fillStyle = '#8fe0ff';
+      const put = (t, yy) => {
+        if (mirrored) { ctx.save(); ctx.scale(-1, 1); ctx.fillText(t, -mx2, yy); ctx.restore(); }
+        else ctx.fillText(t, mx2, yy);
+      };
+      put(t1, my2 - fs / 3); put(t2, my2 + fs);
+    }
+  }
+  ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);  // 統計・番号は画像回転と無関係に読む
+  {
+    const mapS = (vx, vy) => {  // ネイティブpx -> PNGピクセル(回転・反転適用)
+      const m = new DOMMatrix().translateSelf(c.width / 2, c.height / 2)
+                .rotateSelf(rot).scaleSelf(mirrored ? -1 : 1, 1);
+      return m.transformPoint(new DOMPoint(vx - tr.width / 2, vy - tr.height / 2));
+    };
+    const fs2 = fs;  // 焼き込み文字はfsに統一(11-24)
+    ctx.font = fs2 + 'px monospace';
+    for (let i = 0; analysis && i < areaComps.length; i++) {
+      const o = areaComps[i];
+      const P1 = mapS(o.x1, o.y1), P2 = mapS(o.x2, o.y2), C = mapS(o.cx, o.cy);
+      ctx.strokeStyle = 'rgba(80,220,120,.8)'; ctx.lineWidth = 1.5;
+      ctx.strokeRect(Math.min(P1.x, P2.x), Math.min(P1.y, P2.y), Math.abs(P2.x - P1.x), Math.abs(P2.y - P1.y));
+      const num = String(i + 1);
+      ctx.fillStyle = 'rgba(0,0,0,.75)'; ctx.fillRect(C.x + 4, C.y - fs2, ctx.measureText(num).width + 4, fs2 + 2);
+      ctx.fillStyle = '#7fe89f'; ctx.fillText(num, C.x + 6, C.y - 2);
+    }
+    if (analysis && validAreas().length && getComputedStyle($('areapanel')).display !== 'none') {
+      const lines = $('areaStats').textContent.split('\n');
+      const lw = Math.max(...lines.map(t => ctx.measureText(t).width));
+      ctx.fillStyle = 'rgba(0,0,0,.85)'; ctx.fillRect(12, 12, lw + 16, lines.length * fs2 * 1.35 + 12);
+      ctx.fillStyle = '#cde';
+      lines.forEach((t, i) => ctx.fillText(t, 20, 12 + 10 + (i + 1) * fs2 * 1.35 - 4));
+    }
+    // ルーラーの目盛りラベル(画像回転と無関係な向きで)
+    if (rulerOn && rulerStepN >= 2) {
+      const mppR2 = mmPerPx();
+      for (const edge of [[1, 0], [0, 1]]) {
+        const span = edge[0] ? tr.width : tr.height;
+        for (let v = 0; v * rulerStepN <= span + 1; v += 5) {
+          const P = mapS(edge[0] ? v * rulerStepN : 0, edge[0] ? 0 : v * rulerStepN);
+          const mmv = mppR2 ? v * rulerStepN * mppR2 : null;
+          const t = mmv != null ? (v === 0 ? '0' : fmtLen(mmv)) : Math.round(v * rulerStepN) + 'px';
+          const tw2 = ctx.measureText(t).width;
+          ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.fillRect(P.x + 3, P.y + 2, tw2 + 5, fs2 + 4);
+          ctx.fillStyle = 'rgba(255,255,255,.9)'; ctx.fillText(t, P.x + 5, P.y + fs2 + 2);
+        }
+      }
+    }
+    // 線分析プロット(パネル表示中のみ。画面表示の模写)
+    if (analysis && lineSeg && lineSeg.key === curKey() && getComputedStyle($('plotpanel')).display !== 'none') {
+      const pw = Math.min(c.width * 0.46, plotc.width), ph = pw * plotc.height / plotc.width;
+      ctx.drawImage(plotc, 12, c.height - ph - 12, pw, ph);
+    }
+  }
+  ctx.restore();
+  if (scaleBarOn) {
+    const mpp = mmPerPx();
+    if (mpp) {
+      ctx.save();
+      if (mirrored) ctx.scale(-1, 1);  // スケールバーは反転の影響を受けない向きで
+      drawScaleBar(ctx, mpp, mm => mm / mpp, tr.width / 2 - 40, tr.height / 2 - 40, fs, scaleInfoLines());
+      ctx.restore();
+    }
+  }
+  // 角度解析の焼き込み
+  for (const o of (analysis ? angles : []).filter(q => q.key === curKey())) {
+    ctx.strokeStyle = 'rgba(255,179,71,.95)'; ctx.lineWidth = lw;
+    drawAngleShape(ctx,
+      { x: o.a.x - tr.width / 2, y: o.a.y - tr.height / 2 },
+      { x: o.b.x - tr.width / 2, y: o.b.y - tr.height / 2 },
+      { x: o.c.x - tr.width / 2, y: o.c.y - tr.height / 2 },
+      angDeg(o.a, o.b, o.c), false, mirrored, fs);
+  }
+  // 形状測定の焼き込み
+  for (const s of (analysis ? shapes : []).filter(q => q.key === curKey()))
+    drawShapeShape(ctx, s, (x, y) => ({ x: x - tr.width / 2, y: y - tr.height / 2 }), mirrored, fs);
+
+}
+function snapshotCanvas(bake, analysis = true) {  // 完成canvasを構築して返す(ダウンロードなし)。インターバルのタイムラプス枠がDL抜きで使う
+  if (!srcOK()) return null;
+  const tr = { width: srcW(), height: srcH() };
+  const c = document.createElement('canvas');
+  const swap = (rot % 180) !== 0;
+  c.width  = swap ? tr.height : tr.width;
+  c.height = swap ? tr.width  : tr.height;
+  const ctx = c.getContext('2d');
+  ctx.translate(c.width / 2, c.height / 2);
+  ctx.rotate(rot * Math.PI / 180);
+  ctx.scale(mirrored ? -1 : 1, 1);
+  const sa = srcAvgCanvas();  // フレーム平均中は蓄積フレームを撮影源とする(見たままが計測値)
+  ctx.drawImage(sa && sa.width === tr.width && sa.height === tr.height ? sa : srcEl(), -tr.width / 2, -tr.height / 2);
+  if (toneActive()) { const ti = ctx.getImageData(0, 0, c.width, c.height); toneSharpPixels(ti); ctx.putImageData(ti, 0, 0); }
+  chanPixels(ctx, c.width, c.height);
+  edgePixels(ctx, c.width, c.height);
+    if (bake) bakeAnalysisDraw(ctx, c, tr, analysis);
+  if (bake && analysis) {  // 統計を最新化してから焼き込み/出力
+    if (validAreas().length) {
+      if (mode === 'part') areaStats();
+      else if (mode === 'area') pixelCount();
+    }
+  }
+  return c;
+}
+function snapshot(bake, analysis = true) {  // bake=false: 映像のみ / (true,true): 解析+基礎データ / (true,false): 基礎データのみ(撮影S)
+  if (!srcOK()) return;
+  const c = snapshotCanvas(bake, analysis);
+  if (!c) return;
+  if (snapshot.onCanvas) { const f = snapshot.onCanvas; snapshot.onCanvas = null; f(c); }  // レポート等のため完成canvasを渡す(任意)
+  const name = fileBase() + (bake && analysis ? '-A' : '') + '.png';  // 基礎データのみ焼き込みは-Aなし
+  c.toBlob(b => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(b); a.download = name; a.click();
+  if (bake && analysis) {  // 解析結果をテキストファイルでも出力
+      const ta = document.createElement('a');
+      ta.href = URL.createObjectURL(new Blob(['\uFEFF' + resultsText()], { type: 'text/plain;charset=utf-8' }));
+      ta.download = name.replace(/\.png$/, '.txt'); ta.click();
+      outputAnalysisCSVs();  // 線分析/面分析/粒子解析のCSVを画像と併せて保存
+    }
+    const img = document.createElement('img');
+    img.src = a.href; img.title = name + ' — クリックで画像解析モードで開く';
+    img.onclick = async () => {
+      try {
+        const blob = await (await fetch(a.href)).blob();
+        const f = new File([blob], name, { type: 'image/png' });
+        const dtr = new DataTransfer(); dtr.items.add(f);
+        const inp = $('fileopen'); inp.files = dtr.files;
+        inp.dispatchEvent(new Event('change', { bubbles: true }));
+      } catch (e2) { status.textContent = 'ギャラリー画像の読み込み失敗: ' + e2.message; }
+    };
+    $('gallery').prepend(img);
+  }, 'image/png');
+}
+
+function makeReport(imgDataUrl) {  // HTMLレポート: 概要表+スナップショット+解析結果+条件JSON(自己完結・単一ファイル)
+  const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const mpp = mmPerPx(), d = conditionsData();
+  const html = `<!DOCTYPE html><html lang="ja"><head><meta charset="utf-8"><title>CxMレポート ${esc($('sampname').value || '')}</title>
+<style>body{font-family:sans-serif;max-width:1000px;margin:24px auto;color:#222}img{max-width:100%;border:1px solid #999}pre{background:#f4f4f4;padding:10px;white-space:pre-wrap;border:1px solid #ccc;font-size:12px}h2{margin-top:24px;border-bottom:2px solid #444;padding-bottom:4px}table{border-collapse:collapse}td,th{border:1px solid #aaa;padding:4px 8px;font-size:13px}</style></head><body>
+<h1>CxM Image レポート</h1><table>
+<tr><th>サンプル</th><td>${esc(($('sampname').value || '').trim() || '(未設定)')}</td></tr>
+<tr><th>日時</th><td>${esc(fmtDT())}</td></tr>
+<tr><th>アプリ</th><td>${esc(APP_VER)}</td></tr>
+<tr><th>較正</th><td>${mpp ? esc(mpp.toFixed(5)) + ' mm/px (' + esc(curKey()) + ')' : '未較正'}</td></tr>
+<tr><th>解像度</th><td>${srcW()}×${srcH()}</td></tr>
+</table>
+<h2>スナップショット(スケール・日時焼き込み)</h2><img src="${imgDataUrl}">
+<h2>解析結果</h2><pre>${esc(resultsText())}</pre>
+<h2>解析条件(JSON)</h2><pre>${esc(JSON.stringify(d, null, 1))}</pre>
+</body></html>`;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([html], { type: 'text/html;charset=utf-8' }));
+  a.download = fileBase() + '-レポート.html'; a.click();
+  status.textContent = 'レポート出力: HTML保存';
+  return html;
+}
+$('repexp').onclick = () => {
+  if (!srcOK()) { status.textContent = 'レポート出力には映像が必要です'; return; }
+  if (validAreas().length) {  // 統計を最新化(ダウンロードは発生させない)
+    if (mode === 'part') areaStats();
+    else if (mode === 'area') pixelCount();
+  }
+  snapshot.onCanvas = c => makeReport(c.toDataURL('image/png'));
+  snapshot(true, false);  // 基礎データのみ焼き込み(スナップショット自体のダウンロードは発生)
+};
+function fileBase() {  // 保存共通の基名: サンプル名-取得日時(未設定ならmicro_ISO)
+  const samp = ($('sampname').value || '').trim().replace(/[\\/:*?"<>|\s]+/g, '_');
+  return samp ? samp + '-' + fmtDT().replace(/[ :]/g, '-')
+              : 'micro_' + new Date().toISOString().replace(/[:.]/g, '-');
+}
+// 11-24 Moto指示: 解析完了のたびにTXTを自動保存する仕様は廃止。結果は画面表示と「解析結果の保存(⇧S)」(-A.txt/CSV)で出力する。
+function downloadCSV(tag, lines) {  // 解析データのCSV併記出力(BOM付きUTF-8)
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['\uFEFF' + lines.join('\n')], { type: 'text/csv;charset=utf-8' }));
+  a.download = fileBase() + '-' + tag + '.csv';
+  a.click();
+}
+function outputAnalysisCSVs() {  // 解析結果の保存時に線分析/面分析/粒子解析のCSVを併記
+  if (lineSeg && lineSeg.key === curKey() && lineProf && lineProf.key === curKey()) {
+    const mpp = mmPerPx(), { a, b, prof, N, d } = lineProf;
+    const L = ['idx,x_px,y_px,dist_px,dist_mm,luminance'];
+    if (lineEdgeX && lineEdgeX.length)
+      L.push('#edge_x_px: ' + lineEdgeX.map(e => Math.round(e.dpx)).join(', ') + '  #edge_x_mm: ' + (mpp ? lineEdgeX.map(e => (e.dpx * mpp).toFixed(2)).join(', ') : ''));
+    L.push('#signal: ' + (chan === 'all' ? 'luminance' : CHAN_LABELS[chan] || chan));
+    for (let i = 0; i <= N; i++) {
+      const t = i / N, x = a.x + (b.x - a.x) * t, y = a.y + (b.y - a.y) * t;
+      L.push(`${i},${x.toFixed(2)},${y.toFixed(2)},${(t * d).toFixed(2)},${mpp ? (t * d * mpp).toFixed(2) : ''},${prof[i].toFixed(2)}`);
+    }
+    downloadCSV('線分析', L);
+  }
+  const A = validAreas();
+  if (A.length && cntResult) {
+    const mpp = mmPerPx();
+    const L = [`#面分析 目標色 rgb(${cntTarget.r},${cntTarget.g},${cntTarget.b}) 許容差(RGB距離) ${cntTol}`,
+      'ROI,roi_area_px2,roi_area_mm2,matched_px,matched_mm2,match_ratio_%'];
+    cntResult.per.forEach((p, i) => L.push(`${i + 1},${p.roiPx2.toFixed(0)},${mpp ? (p.roiPx2 * mpp * mpp).toFixed(2) : ''},${p.matched},${mpp ? (p.matched * mpp * mpp).toFixed(2) : ''},${(100 * p.matched / p.roiPx2).toFixed(2)}`));
+    downloadCSV('面分析', L);
+  }
+  if (areaComps.length) {
+    const mpp = mmPerPx();
+    const L = [segMode === 'hue'
+        ? `#粒子解析 区分=色相${hueC}度±${hueTol} 彩度>=${satMin}% 最小面積${minArea}px2 接触分離${wtrOn ? 'ON' : 'OFF'} 円形度>=${cirMin}%`
+        : `#粒子解析 閾値${thr} ${polarity === 'light' ? '明' : '暗'} 最小面積${minArea}px2 背景補正${bgRad} 接触分離${wtrOn ? 'ON' : 'OFF'} 円形度>=${cirMin}%`,
+      'particle,centroid_x_px,centroid_y_px,area_px2,area_mm2,diameter_eq_px,diameter_eq_mm,circularity_%,aspect_ratio,major_px,major_mm,minor_px,minor_mm,bbox_x1,bbox_y1,bbox_x2,bbox_y2'];
+    areaComps.forEach((o, i) => L.push(`${i + 1},${o.cx.toFixed(2)},${o.cy.toFixed(2)},${o.areaPx},${o.areaMm2 != null ? o.areaMm2.toFixed(2) : ''},${o.dEqPx.toFixed(2)},${mpp ? (o.dEqPx * mpp).toFixed(2) : ''},${(o.circ * 100).toFixed(1)},${o.ar.toFixed(2)},${o.majorPx.toFixed(2)},${mpp ? (o.majorPx * mpp).toFixed(2) : ''},${o.minorPx.toFixed(2)},${mpp ? (o.minorPx * mpp).toFixed(2) : ''},${Math.round(o.x1)},${Math.round(o.y1)},${Math.round(o.x2)},${Math.round(o.y2)}`));
+    downloadCSV('粒子解析', L);
+  }
+}
+function resultsText() {  // 解析結果の保存時のテキスト出力
+  const mpp = mmPerPx(), L = [];
+  L.push('CxM Image 解析結果');
+  L.push('サンプル名: ' + (($('sampname').value || '').trim() || '(名称なし)'));
+  L.push('日時: ' + fmtDT());
+  L.push('画像: ' + srcW() + '×' + srcH() + '  ソース: ' + (mediaMode === 'file' ? 'ファイル: ' + fileName : 'カメラライブ映像'));
+  L.push('較正: ' + (mpp ? mpp.toFixed(6) + ' mm/px' : '未校正(長さはpx表記)'));
+  if (calSeg && calSeg.key === curKey())
+    L.push('基準長さ: ' + calSeg.mm + ' mm = ' + Math.round(vpxDist(calSeg.a, calSeg.b)) + ' px');
+  if (meas.length) {
+    L.push('', '--- 2点間距離 ---');
+    meas.forEach((m, i) => L.push(`#${i + 1} ${m.mm != null ? m.mm.toFixed(2) + ' mm' : '(未較正)'} (${Math.round(vpxDist(m.a, m.b))} px) A(${m.a.x.toFixed(1)},${m.a.y.toFixed(1)}) B(${m.b.x.toFixed(1)},${m.b.y.toFixed(1)})`));
+  }
+  if (lineSeg && lineSeg.key === curKey()) {
+    const d = vpxDist(lineSeg.a, lineSeg.b);
+    L.push('', '--- 線分析 ---',
+      `線分長 ${mpp ? (d * mpp).toFixed(2) + ' mm' : Math.round(d) + ' px'} A(${lineSeg.a.x.toFixed(2)},${lineSeg.a.y.toFixed(2)}) B(${lineSeg.b.x.toFixed(2)},${lineSeg.b.y.toFixed(2)})`);
+    if (lineEdgeX && lineEdgeX.length)
+      L.push(`エッジ検出 ${lineEdgeX.length}箇所 (X=` + (mpp ? 'mm' : 'px') + `, 線分A起点からの距離): ` + lineEdgeX.map(e => mpp ? (e.dpx * mpp).toFixed(2) : String(Math.round(e.dpx))).join(', '));
+  }
+  if (refPt && refPt.key === curKey()) {
+    L.push('', '--- 点分析(基準点からの相対座標・ベクトル) ---',
+      `基準: (${refPt.x.toFixed(2)},${refPt.y.toFixed(2)})`);
+    ptList.filter(q => q.key === curKey()).forEach((q, i) => {
+      const dx = q.x - refPt.x, dy = q.y - refPt.y;
+      const d = Math.hypot(dx, dy);
+      const ang = (Math.atan2(dy, dx) * 180 / Math.PI + 360) % 360;  // 画面方向一致(Y下, 時計回り正)
+      const fm = mpp ? (v) => (v >= 0 ? '+' : '') + (v * mpp).toFixed(2) : (v) => (v >= 0 ? '+' : '') + Math.round(v);
+      const unit = mpp ? 'mm' : 'px';
+      L.push(`#${i + 1} Δx=${fm(dx)} Δy=${fm(dy)} ${unit} |v|=${mpp ? (d * mpp).toFixed(2) + ' mm' : Math.round(d) + ' px'} ∠${ang.toFixed(1)}° (${Math.round(d)} px) 基準(${refPt.x.toFixed(1)},${refPt.y.toFixed(1)})→(${q.x.toFixed(1)},${q.y.toFixed(1)})`);
+    });
+  }
+  const angList = angles.filter(q => q.key === curKey());
+  if (angList.length) {
+    L.push('', '--- 角度(3点A→頂点B→C。頂点の内角。較正不要) ---');
+    angList.forEach((o, i) => {
+      const deg = angDeg(o.a, o.b, o.c);
+      const dAB = vpxDist(o.a, o.b), dBC = vpxDist(o.b, o.c);
+      const fL = d => mpp ? (d * mpp).toFixed(2) + ' mm' : Math.round(d) + ' px';
+      L.push(`#${i + 1} ∠=${deg.toFixed(2)}° 辺AB=${fL(dAB)} 辺BC=${fL(dBC)} A(${o.a.x.toFixed(1)},${o.a.y.toFixed(1)}) B=頂点(${o.b.x.toFixed(1)},${o.b.y.toFixed(1)}) C(${o.c.x.toFixed(1)},${o.c.y.toFixed(1)})`);
+    });
+  }
+  const shpList = shapes.filter(q => q.key === curKey());
+  if (shpList.length) {
+    L.push('', '--- 形状測定 ---');
+    shpList.forEach((s, i) => {
+      const fL = (d) => mpp ? (d * mpp).toFixed(2) + ' mm' : Math.round(d) + ' px';
+      const fA = (a) => mpp ? (a * mpp * mpp).toFixed(2) + ' mm²' : Math.round(a) + ' px²';
+      if (s.kind === 'circle') {
+        const cc = shapeCircle(s);
+        if (!cc) return;
+        L.push(`#${i + 1} 円 外接円: 中心(${cc.x.toFixed(2)},${cc.y.toFixed(2)}) 半径r=${fL(cc.r)} 直径d=${fL(2 * cc.r)} 面積S=${fA(Math.PI * cc.r * cc.r)} 3点(${s.pts.map(q => q.x.toFixed(1) + ',' + q.y.toFixed(1)).join(') (')})`);
+      } else if (s.kind === 'rect2' || s.kind === 'square2') {
+        const C = shapeCorners(s);
+        const sides = [];
+        for (let k = 0; k < 4; k++) sides.push(`L${k + 1}=${fL(vpxDist(C[k], C[(k + 1) % 4]))}`);
+        const name = s.kind === 'rect2' ? '矩形' : '正方形';
+        L.push(`#${i + 1} ${name} 辺 ${sides.join(' ')} 対角=${fL(vpxDist(s.pts[0], s.pts[1]))} 面積S=${fA(quadArea(C))} 対角2点(${s.pts.map(q => q.x.toFixed(1) + ',' + q.y.toFixed(1)).join(') (')})`);
+      } else {
+        const sides = [];
+        for (let k = 0; k < 4; k++) sides.push(`L${k + 1}=${fL(vpxDist(s.pts[k], s.pts[(k + 1) % 4]))}`);
+        L.push(`#${i + 1} 領域 辺 ${sides.join(' ')} 対角=${fL(vpxDist(s.pts[0], s.pts[2]))}/${fL(vpxDist(s.pts[1], s.pts[3]))} 面積S=${fA(quadArea(s.pts))} 4点(${s.pts.map(q => q.x.toFixed(1) + ',' + q.y.toFixed(1)).join(') (')})`);
+      }
+    });
+  }
+  const A = validAreas();
+  if (A.length) {
+    if (cntResult) {
+      L.push('', '--- 面分析(指定色ピクセルカウント) ---');
+      L.push($('areaStats').textContent);
+      A.forEach((a, i) => L.push(`ROI${i + 1} 頂点: ${a.pts.map(p => `(${Math.round(p.x)},${Math.round(p.y)})`).join(' ')}`));
+    }
+    if (areaComps.length) {
+      L.push('', '--- 粒子解析 ---');
+      L.push(segMode === 'hue'
+        ? `設定: 区分=色相${hueC}°±${hueTol} 彩度≥${satMin}% 最小面積${minArea}px² 接触分離${wtrOn ? 'ON' : 'OFF'} 円形度≥${cirMin}%`
+        : `設定: 閾値${thr} ${polarity === 'light' ? '明画素' : '暗画素'} 最小面積${minArea}px² 背景補正${bgRad} 接触分離${wtrOn ? 'ON' : 'OFF'} 円形度≥${cirMin}%`);
+      A.forEach((a, i) => L.push(`ROI${i + 1} 頂点: ${a.pts.map(p => `(${Math.round(p.x)},${Math.round(p.y)})`).join(' ')}`));
+      L.push('', $('partStats').textContent);
+      areaComps.forEach((o, i) => {
+        const fD = mpp ? (o.dEqPx * mpp).toFixed(2) + ' mm' : o.dEqPx.toFixed(2) + ' px';
+        L.push(`粒子${i + 1}: 重心(${o.cx.toFixed(2)},${o.cy.toFixed(2)}) 面積 ${o.areaMm2 != null ? fmtArea2(o.areaMm2) : o.areaPx + ' px²'} 粒子径(等価円)=${fD} bbox(${Math.round(o.x1)},${Math.round(o.y1)})-(${Math.round(o.x2)},${Math.round(o.y2)})`);
+      });
+    }
+    if (!cntResult && !areaComps.length) {
+      L.push('', '--- ROI ---');
+      A.forEach((a, i) => L.push(`ROI${i + 1} 面積=${polyAreaPx2(a.pts).toFixed(0)} px² 頂点: ${a.pts.map(p => `(${Math.round(p.x)},${Math.round(p.y)})`).join(' ')}`));
+    }
+  }
+  return L.join('\n');
+}
+
+// ---- 動画撮影(WebM): 選択遅延(即時/3s/10s)後に録画開始、時間(10s/30s)で自動停止 or 任意は再クリックで停止 ----
+let rec = null, recChunks = [], recT0 = 0, recStopT = null, recCountT = null, recTotalS = 0;
+let recBake = localStorage.getItem('rec bake') !== '0';  // 既定ON: 解析結果を動画へインポーズ
+let recComp = null, recVTrack = null;
+function recBakeDraw() {  // ネイティブ解像度でfx/映像+解析描画を合成(見たまま)
+  const W = srcW(), H = srcH();
+  if (!W || !H) return false;
+  if (!recComp) recComp = document.createElement('canvas');
+  const swap = (rot % 180) !== 0;
+  const cw = swap ? H : W, ch = swap ? W : H;
+  if (recComp.width !== cw || recComp.height !== ch) { recComp.width = cw; recComp.height = ch; }
+  const ctx = recComp.getContext('2d');
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.translate(cw / 2, ch / 2);
+  ctx.rotate(rot * Math.PI / 180);
+  ctx.scale(mirrored ? -1 : 1, 1);
+  const sa = srcAvgCanvas();
+  const src = (fx.style.display === 'block') ? fx : (sa && sa.width === W && sa.height === H ? sa : srcEl());
+  ctx.drawImage(src, -W / 2, -H / 2);
+  bakeAnalysisDraw(ctx, recComp, { width: W, height: H }, true);
+  return true;
+}
+function recBakeFrame() {
+  if (!recVTrack || !rec || rec.state !== 'recording') return;
+  if (recBakeDraw()) { try { recVTrack.requestFrame(); } catch (e) {} }
+}
+const REC_LABEL = '🎬 動画撮影(V)';
+function recStopNow() { if (rec && rec.state !== 'inactive') rec.stop(); }
+function recUI(on, txt) {  // 録画状態の表示同期: メニュー内ボタン+ヘッダーの動画▾(メニュー閉じても状態が見える)
+  $('rec').classList.toggle('on', on); $('rec').textContent = txt;
+  $('recbtn').classList.toggle('on', on);
+  $('recbtn').innerHTML = on ? (txt.includes('後に開始') ? '⏳<br>' + txt.split(' ')[0] : '⏹<br>録画中') : '🎬<br>動画 ▾';
+  drawOverlay();
+}
+const recmenu = $('recmenu');
+$('recbtn').onclick = e => { e.stopPropagation(); openStaticMenu($('recbtn'), recmenu); };
+$('recbake').classList.toggle('on', recBake);
+$('recbake').onclick = () => { recBake = !recBake; localStorage.setItem('rec bake', recBake ? '1' : '0');
+  $('recbake').classList.toggle('on', recBake); };
+$('rec').onclick = () => {
+  if (recCountT) {  // カウントダウン中: 取り消し
+    clearInterval(recCountT); recCountT = null;
+    recUI(false, REC_LABEL);
+    status.textContent = '録画開始のカウントダウンを取り消し';
+    return;
+  }
+  if (rec) {  // 録画中: 停止(任意時間のとき)
+    if (recStopT) { clearTimeout(recStopT); recStopT = null; }
+    recStopNow();
+    return;
+  }
+  if (mediaMode !== 'live' || !stream) { status.textContent = '動画撮影にはカメラ開始(リアルタイム)が必要です'; return; }
+  const dly = +($('recdelay').value || 0), len = +($('reclen').value || 10);
+  const begin = () => {
+    if (!stream) return;
+    let mime = 'video/webm';
+    try { if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9')) mime = 'video/webm;codecs=vp9'; } catch (e) {}
+    // 画像演算(数式チャンネル)・補正・エッジ表示中はfxキャンバス(GL)が画面。その表示をそのまま録る。
+    let recSrc = stream;
+    recVTrack = null;
+    if (recBake && srcW()) {  // 解析インポーズ: 合成canvasへ映像フレームごとに手動送り
+      if (!recBakeDraw()) { rec = null; status.textContent = '録画開始失敗: 合成キャンバスを作れません'; return; }
+      recSrc = recComp.captureStream(0);
+      recVTrack = recSrc.getVideoTracks()[0];
+    } else if (fxNeeded() && fx.style.display === 'block') {
+      let fps = 30;
+      try { fps = Math.round(stream.getVideoTracks()[0].getSettings().frameRate) || 30; } catch (e) {}
+      recSrc = fx.captureStream(fps);
+    }
+    try { rec = new MediaRecorder(recSrc, { mimeType: mime, videoBitsPerSecond: 12000000 }); }
+    catch (e) { rec = null; status.textContent = '録画開始失敗: ' + e.message; return; }
+    recChunks = []; recT0 = Date.now(); recTotalS = len || 0;
+    rec.ondataavailable = ev => { if (ev.data && ev.data.size) recChunks.push(ev.data); };
+    rec.onstop = () => {
+      const secs = ((Date.now() - recT0) / 1000).toFixed(2);
+      const blob = new Blob(recChunks, { type: 'video/webm' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob); a.download = fileBase() + '-動画.webm'; a.click();
+      rec = null; recVTrack = null; recComp = null; recUI(false, REC_LABEL);
+      status.textContent = `動画保存: ${secs} 秒 WebM (${blob.size >= 1048576 ? (blob.size / 1048576).toFixed(2) + ' MB' : (blob.size / 1024).toFixed(0) + ' KB'})`;
+    };
+    rec.start(1000);
+    recUI(true, len ? '⏹ 録画中 ' + len + 's' : '⏹ 録画中(クリックで停止)');
+    if (len) recStopT = setTimeout(() => { recStopT = null; recStopNow(); }, len * 1000);
+  };
+  if (dly > 0) {
+    let left = dly;
+    recUI(true, `${left}s 後に開始`);
+    recCountT = setInterval(() => {
+      left--;
+      if (left <= 0) { clearInterval(recCountT); recCountT = null; recUI(false, REC_LABEL); begin(); }
+      else recUI(true, `${left}s 後に開始`);
+    }, 1000);
+  } else begin();
+};
+// ---- インターバル撮影: 一定間隔で焼き込みスナップショットを自動保存 ----
+let tincT = null, tincN = 0, tincMax = 0, tincMode = 'img', tlFrames = [];
+// タイムラプス: 合計taltotal分をtaln秒に短縮(30fps固定)。撮影間隔T=x/30秒、x=合計/完成長
+function talParams() {
+  const totalS = (Math.max(1, +$('taltotal').value || 60)) * 60;
+  const nS = Math.max(1, +$('taln').value || 60);
+  const x = totalS / nS;
+  const T = Math.max(1, x / 30);  // 最低1秒間隔(スナップショット生成の実行限界)
+  return { totalS, nS, x, T, frames: Math.round(totalS / T) };
+}
+function talInfo() {
+  const t = talParams();
+  $('talinfo').textContent = `→ ${Math.round(t.x)}倍速・撮影間隔${t.T < 10 ? t.T.toFixed(1) : Math.round(t.T)}秒・${t.frames}枠・30fps`;
+}
+$('taltotal').oninput = talInfo; $('taln').oninput = talInfo; talInfo();  // 数値は自由入力、入力に応じて倍速情報追随
+function tincUI() {  // 2つの開始ボタン(画像間隔/タイムラプス)とヘッダーの状態表示
+  const run = !!tincT;
+  $('tinc').textContent = run && tincMode === 'img' ? `⏹ 停止 (${tincN}${tincMax ? '/' + tincMax : ''})` : '画像間隔撮影を開始';
+  $('tinc').classList.toggle('on', run && tincMode === 'img');
+  $('talbtn').textContent = run && tincMode === 'tl' ? `⏹ 停止 (${tincN}/${tincMax})` : 'タイムラプス撮影を開始';
+  $('talbtn').classList.toggle('on', run && tincMode === 'tl');
+  $('tincbtn').classList.toggle('on', run);
+  drawOverlay();
+}
+function tincStop(msg) {
+  if (tincT) { clearInterval(tincT); tincT = null; }
+  tincUI();
+  if (msg) status.textContent = msg;
+}
+async function tlCompose() {  // 収集フレーム(JPEG blob)を1本のWebMタイムラプスに合成して保存
+  const frames = tlFrames; tlFrames = [];
+  if (!frames.length) return;
+  status.textContent = 'インターバル撮影: タイムラプス動画を作成中…';
+  const bmps = [];
+  for (const b of frames) { try { bmps.push(await createImageBitmap(b)); } catch (e) {} }
+  if (!bmps.length) { status.textContent = 'インターバル撮影: フレームの復元に失敗'; return; }
+  const c = document.createElement('canvas'); c.width = bmps[0].width; c.height = bmps[0].height;
+  const ctx = c.getContext('2d');
+  const fps = 30;  // 再生fpsは固定(短縮倍率は撮影間隔で決まる)
+  const stream = c.captureStream(0);  // 手動フレーム送り: requestFrameはMediaStreamではなくビデオトラックのメソッド(Chromium実測)
+  const vtrack = stream.getVideoTracks()[0];
+  let mime = 'video/webm;codecs=vp9';
+  if (!window.MediaRecorder || !MediaRecorder.isTypeSupported(mime)) mime = 'video/webm';
+  const rec = new MediaRecorder(stream, { mimeType: mime });
+  const chunks = [];
+  rec.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
+  const done = new Promise(res => { rec.onstop = res; });
+  rec.start();
+  for (const b of bmps) {  // 各フレームを1/fps秒間隔で送り、実時間軸上の間隔=再生速度になるようにする
+    ctx.drawImage(b, 0, 0); vtrack.requestFrame();
+    await new Promise(r => setTimeout(r, 1000 / fps));
+  }
+  rec.stop(); await done;
+  const name = fileBase() + '-タイムラプス.webm';
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(chunks, { type: 'video/webm' })); a.download = name; a.click();
+  for (const b of bmps) { if (b.close) b.close(); }
+  status.textContent = `インターバル撮影: タイムラプス動画(${frames.length}フレーム→${(frames.length / fps).toFixed(1)}秒・${fps}fps)を保存しました`;
+}
+function tincToggle(mode) {  // mode='img'(画像間隔) / 'tl'(タイムラプス) — 開始ボタン独立
+  if (tincT) {
+    const wasTl = tincMode === 'tl';
+    tincStop(`インターバル撮影: 停止(撮影${tincN}枚)`);
+    if (wasTl) tlCompose();
+    return;
+  }
+  if (!srcOK()) { status.textContent = 'インターバル撮影には映像が必要です'; return; }
+  tincMode = mode;
+  let iv, tal = null;
+  if (tincMode === 'tl') { tal = talParams(); iv = tal.T; tincMax = tal.frames; }
+  else { iv = Math.max(2, +$('tintv').value || 10); tincMax = +$('tincnt').value || 0; }
+  tincN = 0;
+  const shot = async () => {
+    if (!srcOK()) { tincStop(`インターバル撮影: 映像が切れたため停止(撮影${tincN}枚)`); if (tincMode === 'tl') tlCompose(); return; }
+    if (tincMode === 'tl') {  // タイムラプス枠: 焼き込みcanvasをDLせずJPEGで保持(awaitで最終枠の取りこぼしを防ぐ)
+      const c = snapshotCanvas(true, false);
+      if (c) await new Promise(res => c.toBlob(b => { if (b) tlFrames.push(b); res(); }, 'image/jpeg', 0.92));
+    } else {
+      snapshot(true, false);  // 基礎データ(スケール/日時)のみ焼き込み=見たままが記録
+    }
+    tincN++;
+    if (tincMax && tincN >= tincMax) { tincStop(`インターバル撮影: ${tincN}枚で完了`); if (tincMode === 'tl') tlCompose(); }
+    else status.textContent = `インターバル撮影: ${tincN}枚目保存 (${iv}秒毎)`;
+  };
+  shot();
+  tincT = setInterval(shot, iv * 1000);
+  tincUI();
+  status.textContent = tincMode === 'tl'
+    ? `インターバル撮影: ${iv}秒毎に撮影し、${tal.totalS / 60}分を${tal.nS}秒のタイムラプス動画に短縮(${Math.round(tal.x)}倍速・30fps)`
+    : `インターバル撮影: ${iv}秒毎に画像保存` + (tincMax ? `、${tincMax}枚` : '、無制限');
+}
+$('tinc').onclick = () => tincToggle('img');
+$('talbtn').onclick = () => tincToggle('tl');
+$('tincbtn').onclick = e => { e.stopPropagation(); openStaticMenu($('tincbtn'), $('tincmenu')); };
+// ---- カメラ設定メニュー(カメラ/解像度/チャンネル) ----
+const devmenu = $('devmenu'), resmenu = $('resmenu'), chanmenu = $('chanmenu');
+const RES_OPTS = [['3840x2160','3840×2160 (4K)'],['1920x1080','1920×1080'],['1280x720','1280×720']];
+// ---- 解像度対応一覧の実測(接続カメラごとにapplyConstraintsで総当たり) ----
+const RES_CAND = [[3840,2160],[3264,2448],[2592,1944],[2304,1296],[2048,1536],[1920,1080],[1600,1200],[1280,960],[1280,720],[1024,768],[800,600],[640,480],[640,360],[320,240]];
+let resCaps = null, resCapsKey = '';
+function resCapsKeyFor() {
+  const lab = (camsList.find(c => c.deviceId === deviceSel) || {}).label || '';
+  return (deviceSel || 'nodev') + '|' + lab;
+}
+async function probeResolutions(force) {
+  const key = resCapsKeyFor();
+  if (!force && resCaps && resCapsKey === key) return resCaps;
+  if (!force) {
+    const cached = localStorage.getItem('res caps ' + key);
+    if (cached) { try { const c = JSON.parse(cached); if (Array.isArray(c) && c.length) { resCaps = c; resCapsKey = key; return c; } } catch (e) {} }
+  }
+  if (!stream) return null;
+  const track = stream.getVideoTracks()[0];
+  if (!track) return null;
+  status.textContent = 'このカメラの対応解像度を照会中…(一瞬映像が途切れます)';
+  const cands = [...RES_CAND].map(([w, h]) => [w, h]);
+  // capabilitiesにvalues一覧があれば候補に追加(標準表にないモードを拾う)
+  try {
+    const caps = track.getCapabilities ? track.getCapabilities() : null;
+    if (caps && caps.width && caps.width.values && caps.height && caps.height.values) {
+      for (const w of caps.width.values) for (const h of caps.height.values) {
+        const ar = w / h;
+        if ([16/9, 4/3, 5/4, 16/10, 1].some(a => Math.abs(ar - a) < 0.03) && !cands.some(c => c[0] === w && c[1] === h)) cands.push([w, h]);
+      }
+    }
+  } catch (e) {}
+  cands.sort((a, b) => b[0] * b[1] - a[0] * a[1]);
+  const found = [];
+  for (const [w, h] of cands) {
+    try {
+      await track.applyConstraints({ width: { exact: w }, height: { exact: h } });
+      const s = track.getSettings();
+      if (s.width === w && s.height === h) found.push(w + 'x' + h);
+    } catch (e) {}
+  }
+  const [rw, rh] = resSel.split('x').map(Number);
+  try { await track.applyConstraints({ width: { exact: rw }, height: { exact: rh } }); } catch (e) { start(); }
+  resCaps = found.length ? found : null; resCapsKey = key;
+  if (found.length) localStorage.setItem('res caps ' + key, JSON.stringify(found));
+  status.textContent = found.length ? `解像度一覧: このカメラは ${found.length}  mode に対応` : '解像度一覧を取れなかったため標準一覧を使用';
+  return resCaps;
+}
+const CHAN_OPTS = Object.keys(CHAN_LABELS).map(k => [k, { all: 'RGB (フルカラー)', r: 'Rのみ', g: 'Gのみ', b: 'Bのみ',
+  rg: 'R+G (Human Eye)', renh: 'R-(G+B) (Red Enhance)', genh: 'G/(R+G+B) (Green Enhance)', exg: '2G-(R+B) (Excess Green Index)',
+  ridx: 'R/(R+G) (Red Index)', gidx: 'G/(G+B) (Green Index)', bidx: 'B/(R+G) (Blue Index)', pgray: '(R+2G+B)/4 (Pseudo Grayscale)' }[k]]);
+function openPickMenu(btn, menu, items, current, onPick) {
+  menu.innerHTML = '';
+  for (const [v, label] of items) {
+    const b = document.createElement('button');
+    b.textContent = label; if (v === current) b.classList.add('on');
+    b.onclick = () => { menu.style.display = 'none'; onPick(v); };
+    menu.appendChild(b);
+  }
+  menu.style.display = 'none';
+  const r = btn.getBoundingClientRect();
+  menu.style.display = 'flex';
+  menu.style.left = Math.max(4, Math.min(innerWidth - menu.offsetWidth - 8, r.left)) + 'px';
+  menu.style.top = (r.bottom + 6) + 'px';
+}
+$('devbtn').onclick = async () => {
+  if (devmenu.style.display === 'flex') { devmenu.style.display = 'none'; return; }
+  await listDevices();
+  openPickMenu($('devbtn'), devmenu, camsList.map((c, i) => [c.deviceId, c.label || ('カメラ ' + (i + 1))]), deviceSel,
+    v => { deviceSel = v; localStorage.setItem('cam deviceId', v); updateDevBtn(); start(); });
+};
+$('resbtn').onclick = async () => {
+  if (resmenu.style.display === 'flex') { resmenu.style.display = 'none'; return; }
+  const caps = await probeResolutions(false);
+  const list = caps ? caps.map(v => [v, v.replace('x', '×')]) : RES_OPTS;
+  const items = list.concat([['__probe', '☐ 対応解像度を再照会']]);
+  openPickMenu($('resbtn'), resmenu, items, resSel,
+    v => {
+      if (v === '__probe') { resmenu.style.display = 'none'; probeResolutions(true); return; }
+      resSel = v; localStorage.setItem('res', v); $('resbtn').textContent = v.replace('x', '×') + ' ▾'; if (stream) start();
+    });
+};
+$('chanbtn').onclick = () => {
+  if (chanmenu.style.display === 'flex') { chanmenu.style.display = 'none'; return; }
+  openPickMenu($('chanbtn'), chanmenu, CHAN_OPTS, chan,
+    v => { chan = v; localStorage.setItem('channel', v); updateChanBtn(); setEdgeMode(); });
+};
+$('resbtn').textContent = resSel.replace('x', '×') + ' ▾';
+updateDevBtn();
+$('rot').onclick = () => { rot = (rot + 90) % 360; $('rot').textContent = '回転(R) ' + rot + '°'; applyTransform(); };
+$('mirror').onclick = () => { mirrored = !mirrored; $('mirror').classList.toggle('on', mirrored); applyTransform(); };
+$('zoom').onchange = () => { zoom = +$('zoom').value; applyTransform(); };
+const syncGridBtn = () => { $('gridbtn').classList.toggle('on', gridOn); $('grid').classList.toggle('on', gridOn); };
+$('grid').onclick = () => { gridOn = !gridOn; syncGridBtn(); drawOverlay(); };
+$('gridstep').onchange = () => { localStorage.setItem('grid step', $('gridstep').value); drawOverlay(); };
+$('gridcolor').value = gridColor;
+$('gridcolor').oninput = () => { gridColor = $('gridcolor').value; localStorage.setItem('grid color', gridColor); drawOverlay(); };
+// 回転・倍率 / グリッドの階層メニュー(低頻度操作はボタン1個+ポップアップの方針)
+const rotmenu = $('rotmenu'), gridmenu = $('gridmenu');
+function openStaticMenu(btn, menu) {
+  if (menu.style.display === 'flex') { menu.style.display = 'none'; return; }
+  const r = btn.getBoundingClientRect();
+  menu.style.display = 'flex';
+  menu.style.left = Math.max(4, Math.min(innerWidth - menu.offsetWidth - 8, r.left)) + 'px';
+  menu.style.top = (r.bottom + 6) + 'px';
+}
+$('rotbtn').onclick = e => { e.stopPropagation(); openStaticMenu($('rotbtn'), rotmenu); };
+$('gridbtn').onclick = e => { e.stopPropagation(); openStaticMenu($('gridbtn'), gridmenu); syncGridBtn(); };
+syncGridBtn();
+$('basebtn').onclick = e => { e.stopPropagation(); openStaticMenu($('basebtn'), $('basemenu')); };
+$('scale').onclick = () => { scaleBarOn = !scaleBarOn; $('scale').classList.toggle('on', scaleBarOn); drawOverlay(); };
+$('ruler').onclick = () => { rulerOn = !rulerOn; $('ruler').classList.toggle('on', rulerOn); drawOverlay(); };
+$('tstamp').onclick = () => { tstampOn = !tstampOn; $('tstamp').classList.toggle('on', tstampOn); drawOverlay(); };
+$('tsamp').onclick = () => { tsampOn = !tsampOn; $('tsamp').classList.toggle('on', tsampOn); drawOverlay(); };
+$('sampname').value = localStorage.getItem('micro-sample') || '';
+$('sampname').oninput = () => { localStorage.setItem('micro-sample', $('sampname').value); };
+$('cm-show').onclick = () => { calSegOn = !calSegOn; $('cm-show').classList.toggle('on', calSegOn); calmenu.style.display = 'none'; drawOverlay(); };
+$('cm-clear').onclick = () => { calmenu.style.display = 'none'; clearAllMeasurements(); };
+function setMode(m) {
+  if (pureView) { pureView = false; $('onlyimg').classList.remove('on'); }
+  mode = m; pending = null; hover = null;
+  $('calbtn').classList.toggle('on', m === 'cal');
+  $('m-dist').classList.toggle('on', m === 'dist');
+  $('lplot').classList.toggle('on', m === 'line');
+  plotPanel.style.display = m === 'line' ? 'block' : 'none';
+  $('m-area').classList.toggle('on', m === 'area');
+  $('m-part').classList.toggle('on', m === 'part');
+  const showPanel = m === 'area' || m === 'part';
+  $('areapanel').style.display = showPanel ? 'block' : 'none';
+  $('areatitle').textContent = m === 'part' ? '粒子解析 — 粒子数・粒子径' : '面分析 — 指定色ピクセルカウント';
+  $('cntctrl').style.display = m === 'area' ? '' : 'none';
+  $('partctrl').style.display = m === 'part' ? '' : 'none';
+  $('m-pt').classList.toggle('on', m === 'pt');
+  $('m-ang').classList.toggle('on', m === 'ang');
+  $('m-shp').classList.toggle('on', m === 'shp');
+  angPts = []; shpPts = []; dragPt = null;
+  if (m === 'area') { areaComps = []; pixelCount(); }
+  if (m === 'part') { cntResult = null; areaStats(); }
+  stage.style.cursor = m === 'cal' ? 'cell' : 'crosshair';
+  drawOverlay();
+}
+const calmenu = $('calmenu');
+$('calbtn').onclick = e => {  // 較正メニュー(条件ボタンと同じ作法)
+  e.stopPropagation();
+  if (calmenu.style.display === 'flex') { calmenu.style.display = 'none'; return; }
+  $('cm-show').classList.toggle('on', calSegOn);
+  const r = $('calbtn').getBoundingClientRect();
+  calmenu.style.display = 'flex';
+  calmenu.style.left = Math.max(4, Math.min(innerWidth - calmenu.offsetWidth - 8, r.left)) + 'px';
+  calmenu.style.top = (r.bottom + 6) + 'px';
+};
+$('cm-set').onclick = () => { calmenu.style.display = 'none'; setMode('cal'); };
+$('m-dist').onclick = () => setMode('dist');
+$('m-pt').onclick = () => setMode(mode === 'pt' ? 'dist' : 'pt');
+$('m-ang').onclick = () => setMode(mode === 'ang' ? 'dist' : 'ang');
+const shpmenu = $('shpmenu');
+$('m-shp').onclick = e => {  // 単一ボタン: 形状種別メニュー(条件ボタンと同じ作法)
+  e.stopPropagation();
+  if (shpmenu.style.display === 'flex') { shpmenu.style.display = 'none'; return; }
+  const r = $('m-shp').getBoundingClientRect();
+  shpmenu.style.display = 'flex';
+  shpmenu.style.left = Math.max(4, Math.min(innerWidth - shpmenu.offsetWidth - 8, r.left)) + 'px';
+  shpmenu.style.top = (r.bottom + 6) + 'px';
+};
+shpmenu.addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.id === 'shpoff') { if (mode === 'shp') setMode('dist'); }
+  else { shpType = b.dataset.shp; shpPts = []; setMode('shp'); }
+  shpmenu.style.display = 'none';
+});
+$('onlyimg').onclick = () => {
+  if (!pureView) {
+    pureView = true; mode = 'view';
+    pending = hover = dragPt = null;
+    ['calbtn', 'm-dist', 'lplot', 'm-area', 'm-part', 'm-pt', 'm-ang', 'm-shp'].forEach(id => $(id).classList.remove('on'));
+    plotPanel.style.display = 'none'; $('areapanel').style.display = 'none'; shpmenu.style.display = 'none';
+    $('onlyimg').classList.add('on'); $('showall').classList.remove('on');
+    stage.style.cursor = 'default';
+    drawOverlay();
+  }
+};
+$('showall').onclick = () => { setMode('dist'); $('showall').classList.add('on'); };
+function clearAllMeasurements() {  // 測定消去(メニュー項目)
+  meas = []; lineSeg = null; lineProf = null; lineEdgeX = null; areas = []; livePts = [];
+  ptList = []; refPt = null; angles = []; angPts = [];
+  shapes = []; shpPts = []; cntResult = null; areaComps = [];
+  pending = hover = null;
+  drawOverlay(); areaStats();
+}
+// ---- 測定条件の一括保存/読み込み(較正・解析条件・表示切替) ----
+function conditionsData() {  // 較正値(calMap)と解析条件・表示切替を1つのJSONにまとめる
+  return {
+    app: 'CxM Image', kind: 'conditions', version: 1, exported: new Date().toISOString(),
+    sampleName: $('sampname').value || '',
+    calMap: calMap, calSegOn: calSegOn,
+    display: {
+      grid: gridOn, gridStep: $('gridstep').value, gridColor: gridColor,
+      scale: scaleBarOn, tstamp: tstampOn, ruler: rulerOn, tsamp: tsampOn, edge: edgeOn
+    },
+    area: { thr: thr, polarity: polarity, minArea: minArea, bgRad: bgRad, wtrOn: wtrOn, cirMin: cirMin,
+      segMode: segMode, hueC: hueC, hueTol: hueTol, satMin: satMin },
+    count: { cntTol: cntTol, cntTarget: cntTarget },
+    line: { edgeThr: lineEdgeThr },
+    tone: { gamma: tone.gamma, contrast: tone.contrast, sharp: tone.sharp, noise: tone.noise, avg: tone.avg, wb: tone.wb.slice() }
+  };
+}
+const condmenu = $('condmenu');
+$('condbtn').onclick = e => {  // 単一ボタン: 条件インポート/エクスポート/解析リセットのメニュー
+  e.stopPropagation();
+  if (condmenu.style.display === 'flex') { condmenu.style.display = 'none'; return; }
+  const r = $('condbtn').getBoundingClientRect();
+  condmenu.style.display = 'flex';
+  condmenu.style.left = Math.max(4, Math.min(innerWidth - condmenu.offsetWidth - 8, r.left)) + 'px';
+  condmenu.style.top = (r.bottom + 6) + 'px';
+};
+document.addEventListener('pointerdown', e => {  // 外側クリックで閉じる(全ポップアップメニュー共通)
+  for (const [m, trig] of [[condmenu, 'condbtn'], [shpmenu, 'm-shp'], [devmenu, 'devbtn'], [resmenu, 'resbtn'], [chanmenu, 'chanbtn'], [calmenu, 'calbtn'], [tonemenu, 'tonebtn'], [rotmenu, 'rotbtn'], [gridmenu, 'gridbtn'], [recmenu, 'recbtn'], [cmpmenu, 'cmpbtn'], [$('tincmenu'), 'tincbtn'], [$('basemenu'), 'basebtn']])
+    if (m.style.display === 'flex' && !m.contains(e.target) && e.target.id !== trig) m.style.display = 'none';
+}, true);
+$('condmenu').addEventListener('click', e => { if (e.target.tagName === 'BUTTON') condmenu.style.display = 'none'; });
+$('condexp').onclick = () => {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(conditionsData(), null, 1)], { type: 'application/json' }));
+  a.download = fileBase() + '-条件.json'; a.click();
+  status.textContent = '条件をJSONへ書き出しました';
+};
+$('condimp').onclick = () => $('condfile').click();
+function setToggle(btnId, on, varSetter) {  // 表示トグルの同期
+  $(btnId).classList.toggle('on', on); varSetter(on);
+}
+function applyConditionsData(d) {  // 読み込んだ条件をUIと状態へ適用
+  if (!d || typeof d !== 'object' || typeof d.calMap !== 'object') throw new Error('CxM条件JSONではありません');
+  Object.assign(calMap, d.calMap);
+  localStorage.setItem('micro-cal', JSON.stringify(calMap));
+  if (typeof d.sampleName === 'string') { $('sampname').value = d.sampleName; localStorage.setItem('micro-sample', d.sampleName); }
+  if (d.display) {
+    const s = d.display;
+    if (typeof s.grid === 'boolean') setToggle('grid', s.grid, v => { gridOn = v; syncGridBtn(); });
+    if (s.gridStep) $('gridstep').value = s.gridStep;
+    if (typeof s.gridColor === 'string' && /^#[0-9a-fA-F]{6}$/.test(s.gridColor)) { gridColor = s.gridColor; $('gridcolor').value = s.gridColor; localStorage.setItem('grid color', s.gridColor); }
+    if (typeof s.scale === 'boolean') setToggle('scale', s.scale, v => scaleBarOn = v);
+    if (typeof s.tstamp === 'boolean') setToggle('tstamp', s.tstamp, v => tstampOn = v);
+    if (typeof s.ruler === 'boolean') setToggle('ruler', s.ruler, v => rulerOn = v);
+    if (typeof s.tsamp === 'boolean') setToggle('tsamp', s.tsamp, v => tsampOn = v);
+    if (typeof s.edge === 'boolean') { edgeOn = s.edge; $('edge').classList.toggle('on', edgeOn); applyFilters(); }
+  }
+  if (d.line && typeof d.line.edgeThr === 'number') {
+    lineEdgeThr = Math.max(1, Math.min(255, d.line.edgeThr));
+    $('edthr').value = lineEdgeThr; localStorage.setItem('line edge thr', String(lineEdgeThr));
+  }
+  if (d.tone) {
+    const q = d.tone;
+    setTone(+q.gamma || 1, +q.contrast || 1, +q.sharp || 0, Math.min(2, +q.noise || 0), +q.avg || 0);
+    if (Array.isArray(q.wb) && q.wb.length === 3) setWb(+q.wb[0] || 1, +q.wb[1] || 1, +q.wb[2] || 1);
+  }
+  if (d.area) {
+    const q = d.area;
+    if (+q.thr >= 1 && +q.thr <= 254) { thr = +q.thr; $('thr').value = thr; $('thrv').textContent = thr; }
+    if (q.segMode === 'hue' || q.segMode === 'lum') segMode = q.segMode;
+    if (+q.hueC >= 0 && +q.hueC <= 360) hueC = +q.hueC;
+    if (+q.hueTol >= 5 && +q.hueTol <= 180) hueTol = +q.hueTol;
+    if (+q.satMin >= 0 && +q.satMin <= 90) satMin = +q.satMin;
+    $('segmode').value = segMode; $('huec').value = hueC; $('huecv').textContent = String(hueC);
+    $('huetol').value = hueTol; $('huetolv').textContent = String(hueTol);
+    $('satmin').value = satMin; $('satminv').textContent = String(satMin);
+    if (q.polarity === 'light' || q.polarity === 'dark') {
+      polarity = q.polarity;
+      $('thrp').classList.toggle('on', polarity === 'light'); $('thrd').classList.toggle('on', polarity === 'dark');
+    }
+    if (+q.minArea >= 5) { minArea = +q.minArea; $('minarea').value = minArea; $('minareav').textContent = minArea; }
+    if (+q.bgRad >= 0) { bgRad = +q.bgRad; $('bgrad').value = bgRad; $('bgradv').textContent = bgRad; }
+    if (typeof q.wtrOn === 'boolean') { wtrOn = q.wtrOn; $('wtr').checked = wtrOn; }
+    if (+q.cirMin >= 0) { cirMin = +q.cirMin; $('cirmin').value = cirMin; $('cirminv').textContent = cirMin; }
+    localStorage.setItem('area thr', thr); localStorage.setItem('area pol', polarity);
+    localStorage.setItem('area min', minArea); localStorage.setItem('area bgrad', bgRad);
+    localStorage.setItem('area wtr', wtrOn ? 'on' : 'off'); localStorage.setItem('area circ', cirMin);
+  }
+  if (d.count) {
+    if (+d.count.cntTol >= 5) { cntTol = +d.count.cntTol; $('cnttol').value = cntTol; $('cnttolv').textContent = cntTol; localStorage.setItem('cnt tol', cntTol); }
+    const t = d.count.cntTarget;
+    if (t && Number.isFinite(+t.r)) {
+      cntTarget = { r: +t.r | 0, g: +t.g | 0, b: +t.b | 0 };
+      $('cntswatch').style.background = `rgb(${cntTarget.r},${cntTarget.g},${cntTarget.b})`;
+    }
+  }
+  drawOverlay();
+  if (mode === 'area') pixelCount(); else if (mode === 'part') areaStats();
+}
+$('condfile').onchange = async e => {
+  const f = e.target.files[0]; e.target.value = '';
+  if (!f) return;
+  try {
+    applyConditionsData(JSON.parse(await f.text()));
+    status.textContent = `条件を読み込みました: 較正 ${Object.keys(calMap).length} 解像度分`;
+  } catch (err) { status.textContent = '条件インポート失敗: ' + err.message; }
+};
+// ---- 解析リセット: 測定・分析・解析結果とROIを全消去(較正値そのものは保持) ----
+$('areset').onclick = () => {
+  areas = []; livePts = []; areaHoverPt = null; dragPt = null; areaComps = [];
+  meas = []; lineSeg = null; lineProf = null; lineEdgeX = null; pending = hover = null;
+  ptList = []; refPt = null; angles = []; angPts = []; shapes = []; shpPts = [];
+  cntTarget = null; cntResult = null; pickArmed = false;
+  $('pickcolor').classList.remove('on'); $('cntswatch').style.background = '#222';
+  $('areaStats').textContent = 'ROI未指定: 左クリックで頂点→右クリックで確定 → 確定後に色をクリック指定';
+  $('partStats').textContent = 'ROI未指定: 左クリックで頂点→右クリックで確定';
+  const hc = $('histc').getContext('2d'); hc.clearRect(0, 0, 430, 120);
+  setMode('dist');  // パネルも閉じる
+  drawOverlay();
+  status.textContent = '解析リセット: 測定・分析・解析結果を消去しました(較正は保持)';
+};
+$('shot').onclick = () => snapshot(true, false);  // 撮影: 基礎データ(ON時)のみ焼き込み
+$('shot2').onclick = () => snapshot(true);
+addEventListener('keydown', e => {
+  if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT')) return;
+  // e.keyは日本語IME変換中は'Process'になるため物理キー(e.code)で判定する
+  const k = e.code;
+  if (k === 'KeyS') snapshot(true, e.shiftKey);  // S=基礎データのみ / Shift+S=解析込み
+  if (k === 'KeyR') $('rot').click();
+  if (k === 'KeyC') setMode('cal');
+  if (k === 'KeyM') setMode('dist');
+  if (k === 'KeyL') setMode(mode === 'line' ? 'dist' : 'line');
+  if (k === 'KeyA') setMode(mode === 'area' ? 'dist' : 'area');
+  if (k === 'KeyK') setMode(mode === 'part' ? 'dist' : 'part');
+  if (k === 'KeyV') $('rec').click();
+  if (k === 'KeyP') setMode(mode === 'pt' ? 'dist' : 'pt');
+  if (k === 'KeyN') setMode(mode === 'ang' ? 'dist' : 'ang');
+  if (k === 'KeyG') setMode(mode === 'shp' ? 'dist' : 'shp');
+  if (k === 'Escape') { pending = hover = livePts = []; areaHoverPt = null; dragPt = null; refPt = null; angPts = []; shpPts = []; drawOverlay(); }
+  if (k === 'Backspace') {
+    if (shpPts.length) shpPts = [];
+    else if (angPts.length) angPts = [];
+    else if (meas.length) meas.pop();
+    else if (livePts.length) livePts = [];
+    else if (areas.length) areas.pop();
+    else if (lineSeg) { lineSeg = null; lineProf = null; lineEdgeX = null; }
+    else if (ptList.length) ptList.pop();
+    else if (refPt) refPt = null;
+    else if (angles.length) angles.pop();
+    else if (shapes.length) shapes.pop();
+    drawOverlay(); areaStats();
+  }
+});
+addEventListener('resize', () => { drawOverlay(); if (cmpOn) cmpDraw(); });
+navigator.mediaDevices.enumerateDevices().then(async () => { await listDevices(); start(); });
+</script>
+</body>
+</html>
