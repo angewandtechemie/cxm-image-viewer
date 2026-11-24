@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CxM Image Viewer 操作マニュアル (Version 1.11)</title>
+<style>
+body{font-family:system-ui,"Segoe UI",sans-serif;max-width:960px;margin:24px auto;padding:0 16px;color:#222;line-height:1.6}
+h1{font-size:22px}h2{font-size:17px;margin-top:28px;border-bottom:2px solid #444;padding-bottom:4px}
+h3{font-size:14px;margin-top:18px}
+table{border-collapse:collapse;width:100%}td,th{border:1px solid #aaa;padding:5px 8px;font-size:13px;text-align:left}
+kbd{background:#eee;border:1px solid #bbb;border-radius:4px;padding:1px 6px;font-size:12px}
+.note{background:#f6f6ee;border-left:4px solid #8a4;padding:8px 12px;font-size:13px}
+.warn{background:#fdf0f0;border-left:4px solid #a55;padding:8px 12px;font-size:13px}
+code{background:#f4f4f4;padding:1px 5px;font-size:12px}
+.langbar{margin:8px 0}
+</style>
+</head>
+<body>
+<h1>CxM Image Viewer 操作マニュアル</h1>
+<p>Version 1.11 対応 / 2026-11-25
+&nbsp;<a href="index-en.html">English version</a></p>
+
+<div class="note">CxM Image Viewerは、USBマイクロスコープ(H1612などUVCカメラ)と顕微鏡カメラの画像を、
+ブラウザ上で表示・撮影・解析するための単一HTMLアプリです。インストール不要で、
+同梱の <code>start_viewer.bat</code> をダブルクリックするだけで起動します。</div>
+
+<h2>1. 起動方法</h2>
+<h3>A. ローカルサーバー(推奨・全機能)</h3>
+<ol>
+<li>配布ZIPを解凍します(<code>index.html</code>・<code>start_viewer.bat</code>・<code>serve.ps1</code>・<code>README.txt</code>が同じフォルダにある状態)。</li>
+<li><code>start_viewer.bat</code> をダブルクリック → 既定ブラウザで <code>http://127.0.0.1:8642/</code> が開きます。</li>
+<li>サーバーウィンドウを開いている間、アプリが利用できます。閉じると停止します。Python不要(Windows標準のPowerShellのみで使用)。</li>
+</ol>
+<h3>B. GitHub Pages(インストール不要)</h3>
+<p>ブラウザからプロジェクトページ(<code>https://angewandtechemie.github.io/cxm-image-viewer/</code>)へアクセスするだけで使えます。
+HTTPSのページではカメラ機能(リアルタイム表示・動画・タイムラプス)もそのまま動作します。
+解析結果の保存(PNG・テキスト・CSV)もブラウザのダウンロードとして行えます。</p>
+<h3>C. ファイル直接開き(制限あり)</h3>
+<p><code>index.html</code> をダブルクリックでも開けますが、ブラウザの仕様でカメラが使えません(file://ではカメラAPI不可)。
+保存した画像の解析のみ可能です。</p>
+<p>対応ブラウザ: Chrome / Edge / Vivaldi などChromium系、およびFirefox(画像演算はWebGL対応ブラウザで動作)。</p>
+
+<h2>2. 画面構成</h2>
+<table>
+<tr><th>領域</th><th>内容</th></tr>
+<tr><td>ヘッダー</td><td>グループ化された操作ボタン(カメラ・画像・動画・解析・較正・表示)。各ボタンにツールチップで説明付き</td></tr>
+<tr><td>中央</td><td>映像表示(カメラ/画像)。画像解析モードではギャラリー(左)と操作パネル(右)を併用</td></tr>
+<tr><td>下部</td><td>ステータスバー: 解像度・fps・回転/反転/倍率・較正値・モード・フォーカス(対応カメラ)</td></tr>
+</table>
+
+<h2>3. 表示ユーティリティ</h2>
+<table>
+<tr><th>項目</th><th>動作</th></tr>
+<tr><td>スケール</td><td>映像下部にスケールバーを表示。黒帯内でバー・目盛り・数値はセンタリング配置。較正後はmm表記</td></tr>
+<tr><td>日時</td><td>右下に日時を表示(撮影画像へ焼き込み)</td></tr>
+<tr><td>ルーラー</td><td>映像上下端に目盛り(未較正=px、較正後=mm)</td></tr>
+<tr><td>サンプル名</td><td>右上にサンプル名を表示(ファイル名接頭辞にもなる)</td></tr>
+<tr><td>グリッド</td><td>半透明グリッド重ね表示。色・間隔(50px固定/自動)設定可</td></tr>
+</table>
+<div class="note">画像解析モード(保存画像の解析)に入ると、スケールバーは自動的にOFFになります(解析結果と重なるため)。
+カメラモードへ戻ると自動的に復元されます。</div>
+
+<h2>4. カメラ操作</h2>
+<ul>
+<li><b>リアルタイム解析</b>: カメラ映像を表示し、設定した解析をリアルタイム(約10fps)で重ね描きします。</li>
+<li><b>カメラ選択</b>: 接続中のUVCカメラ(H1612、Webカメラ等)から選択します。</li>
+<li><b>解像度選択</b>: 選択中のカメラが実際にサポートする解像度を一覧表示します(接続時に自動照会・カメラ単位で記憶)。
+一覧が古い場合は「☐ 対応解像度を再照会」で更新できます。H1612では4K(3840×2160)が最上位です。</li>
+<li><b>ch(画像演算)</b>: RGB / R・G・B単色 / Human Eye(R+G) / Red Enhance / Green Enhance / ExG /
+Red Index / Green Index / Blue Index / Pseudo Gray。表示・撮影・解析に共通適用。</li>
+<li><b>フォーカス</b>: H1612はスライダーで電子フォーカス操作可(0〜255、+/-キーで±5)。</li>
+<li><b>回転・反転・倍率</b>: 90°回転、左右反転、デジタルズーム(1〜8倍)。ズーム時は画面上でドラッグしてパン。</li>
+<li><b>補正</b>: ガンマ(0.2〜5.0)、コントラスト(0.2〜3.0)、シャープ(0〜2.0)、ノイズ低減(中央値/ガウシアン)、
+フレーム平均(静止画のSN比向上)。自動ホワイトバランス(グレイワールド)と「全自動補正」(WB+ガンマ+コントラスト+ノイズ低減+フレーム平均の一括自動設定)付き。
+補正値はカメラ・画像・保存・解析に共通適用されます。</li>
+<li><b>撮影(S)</b>: 現在の映像をPNG保存(映像のみ)。</li>
+<li><b>画像解析</b>: 画像ファイルを読み込み。ギャラリーに複数画像を保持でき、クリックで画像解析モードとして開きます。</li>
+</ul>
+
+<h2>5. 動画撮影</h2>
+<ol>
+<li>「🎬 動画」→ 開始遅延(即時/3秒/10秒)と録画時間(10秒/30秒/任意)を選択 → 「🎬 動画撮影(V)」。</li>
+<li>録画中は画面上部に<b>RECマーカー(赤ドット+経過時間)</b>と進行バーが表示されます(ファイルには焼き込まれません)。</li>
+<li>「解析を含めて録画」(既定ON)をONにすると、測定線・ROI・統計ブロック・プロット・スケールバー等の解析オーバーレイを
+そのままの解像度で動画へインポーズします。OFFにすると映像のみを録画します。</li>
+<li>遅延カウントダウン中は再クリックで取消、録画中は再クリックで停止。ファイルは <code>サンプル名-動画.webm</code>。</li>
+</ol>
+
+<h2>6. インターバル撮影</h2>
+<h3>画像間隔撮影</h3>
+<p>「⏱ インターバル」→ 間隔(秒)と枚数(0=無制限)→「画像間隔撮影を開始」。
+スケール・日時を焼き込んだ静止画を <code>サンプル名-001.png</code> 連番で自動保存します。
+実行中は画面上部に<b>進行マーカー(橙ドット+撮影枚数)</b>と進行バーが表示されます。
+ブラウザの「複数ファイルの自動ダウンロードを許可」が必要です。</p>
+<h3>タイムラプス撮影</h3>
+<p>総録画時間(分)と完成動画の長さ(秒)を設定して開始。指定間隔で撮影し、30fpsで短縮再生する1本のWebMに合成します
+(<code>サンプル名-タイムラプス.webm</code>)。実行中は<b>TLマーカー(橙ドット+n/total)</b>と進行バーが表示されます。</p>
+
+<h2>7. 解析機能</h2>
+<p>各モードはボタンまたはキーで切入。<b>較正はモード共通</b>で、一度較正すると全測定でmm表記になります。</p>
+<table>
+<tr><th>モード</th><th>キー</th><th>操作</th><th>出力</th></tr>
+<tr><td>較正(基準長)</td><td><kbd>C</kbd></td><td>画像上の既知長さ(例: スケールバー)の両端を2点クリック → 実長(mm)を入力</td><td>mm/px値。画像ごとに保持(同一解像度では自動適用)。較正線表示可</td></tr>
+<tr><td>2点間距離</td><td><kbd>M</kbd></td><td>2点クリック(ドラッグで端点微調整)</td><td>mm長・px・角度。複数本同時表示</td></tr>
+<tr><td>角度</td><td><kbd>N</kbd></td><td>辺上点A→頂点B→辺上点Cの順に3点クリック</td><td>頂点の内角(°)。較正不要</td></tr>
+<tr><td>形状測定</td><td><kbd>G</kbd></td><td>円=円周上3点 / 矩形・正方形=対角2点 / 領域=四頂点4点</td><td>半径・直径・面積・辺長・対角。頂点のドラッグ編集可</td></tr>
+<tr><td>点分析</td><td><kbd>P</kbd></td><td>基準点→測定点(複数可)</td><td>相対XY座標・ベクトル長・角度。CSV出力</td></tr>
+<tr><td>線分析</td><td><kbd>L</kbd></td><td>断面線2点ドラッグ</td><td>輝度プロット(300サンプル)。エッジ閾値で縁の位置を自動数値表示</td></tr>
+<tr><td>面分析</td><td><kbd>A</kbd></td><td>ROI多角形(左クリック=頂点、右クリック=確定)→「色指定」→目標色クリック</td><td>ROI面積・目標色画素数・占有率(%)。許容差調整可</td></tr>
+<tr><td>粒子解析</td><td><kbd>K</kbd></td><td>ROI+閾値(明/暗、Otsu自動)または色相区分(HSV)。最小面積・背景補正・接触分離(分水嶺)・円形度フィルタ</td><td>粒子数・粒子径(等価円)統計(平均/中央値/四分位/範囲)・面積統計・円形度・縦横比。サイズ分布ヒストグラム(対数ビン、ImageJ風)。CSV出力(1粒子1行+ディスクリプタ)</td></tr>
+</table>
+<div class="note">解析結果は画面下部のテキストエリアに蓄積されます。ファイルへの出力は「💾 解析結果の保存(Shift+S)」
+(描画込みPNG+結果テキスト)と各パネルのCSV/HTMLレポートのみです。解析の確定ごとにTXTが自動保存されることはありません。</div>
+<h3>保存・出力</h3>
+<ul>
+<li><b>💾 解析結果の保存(Shift+S)</b>: 解析描画を焼き込んだPNG(<code>-A.png</code>)と結果テキスト(<code>-A.txt</code>)。</li>
+<li><b>📄 レポート出力</b>: スナップショット+解析結果+解析条件(JSON)を1枚のHTMLレポート(<code>-レポート.html</code>)として保存。</li>
+<li><b>⚙ 解析条件</b>: 較正値・全解析条件・表示設定をJSONへエクスポート/インポート。リセット。</li>
+</ul>
+
+<h2>8. 画像比較</h2>
+<p>「🔀 比較」→「現在フレームを固定(開始)」で現フレームをReference(左)に固定し、右にライブ(Sample)を表示。
+ブロック単位の差分率をヒートマップと差分ブロック数で表示します。Referenceは画像ファイルからの読み込みも可能。</p>
+
+<h2>9. キーボードショートカット</h2>
+<table>
+<tr><th>キー</th><th>動作</th><th>キー</th><th>動作</th></tr>
+<tr><td><kbd>S</kbd></td><td>撮影</td><td><kbd>C</kbd></td><td>較正モード</td></tr>
+<tr><td><kbd>V</kbd></td><td>動画撮影開始/停止</td><td><kbd>M</kbd></td><td>2点間距離</td></tr>
+<tr><td><kbd>L</kbd></td><td>線分析</td><td><kbd>A</kbd></td><td>面分析</td></tr>
+<tr><td><kbd>K</kbd></td><td>粒子解析</td><td><kbd>P</kbd></td><td>点分析</td></tr>
+<tr><td><kbd>N</kbd></td><td>角度</td><td><kbd>G</kbd></td><td>形状測定</td></tr>
+<tr><td><kbd>R</kbd></td><td>90°回転</td><td><kbd>Shift+S</kbd></td><td>解析結果保存</td></tr>
+<tr><td><kbd>Esc</kbd></td><td>測定取消/モード解除</td><td><kbd>+</kbd>/<kbd>-</kbd></td><td>フォーカス±5(対応カメラ)</td></tr>
+</table>
+
+<h2>10. トラブルシューティング</h2>
+<table>
+<tr><th>症状</th><th>対処</th></tr>
+<tr><td>「カメラ開始失敗」</td><td>他のアプリ(純正ビューア等)がカメラ使用中 → 閉じる。ブラウザのカメラ許可を確認</td></tr>
+<tr><td>カメラが映らない(file://)</td><td>ファイル直接開きではカメラ不可。<code>start_viewer.bat</code>またはGitHub Pagesを使用</td></tr>
+<tr><td>解像度一覧に目的値がない</td><td>そのカメラが実際にサポートする解像度のみ表示されます。「☐ 対応解像度を再照会」を試す</td></tr>
+<tr><td>画像が黄色/緑っぽい</td><td>「補正 ▾」→「自動ホワイトバランス」または「全自動補正」</td></tr>
+<tr><td>粒子が細かく分断</td><td>閾値を下げる/背景補正を上げる/最小面積を上げる</td></tr>
+<tr><td>接触した粒子が1塊になる</td><td>「接触分離」にチェック(分水嶺分割)</td></tr>
+<tr><td>長さがpxのまま</td><td><kbd>C</kbd>で較正(画像内の基準長さでmm化)</td></tr>
+<tr><td>画像解析モードでスケールバーが消えた</td><td>仕様です(自動OFF)。カメラモード復帰で自動復元。必要なら「表示ON/OFF」→スケールでON</td></tr>
+<tr><td>ダウンロードされない</td><td>ブラウザの複数ファイル自動ダウンロードを許可</td></tr>
+</table>
+
+<h2>11. 更新履歴</h2>
+<ul>
+<li><b>1.11</b>: 解析確定時のTXT自動保存を廃止(ファイル出力はShift+SとCSV/レポートのみ)。スケールバーのバー・ラベル・情報行を黒帯内でセンタリング。</li>
+<li><b>1.9〜1.10</b>: 録画への解析インポーズ(「解析を含めて録画」、既定ON)。スケールバーを単一バー化。</li>
+<li><b>1.7〜1.8</b>: 解像度メニューを実測対応一覧化(カメラ単位記憶・再照会)。録画・タイムラプスの進行マーカーと進行バー。画像演算適用中の録画反映。</li>
+<li><b>1.6</b>: 画像解析モード入場時のスケールバー自動OFF/復帰。</li>
+<li><b>1.5</b>: 画像演算10種の追加、自動ホワイトバランス・全自動補正、ノイズ低減・フレーム平均、画像比較、画像ギャラリー。</li>
+<li><b>1.4</b>: 形状測定(円/矩形/正方形/領域)、角度測定。</li>
+<li><b>1.3</b>: 粒子解析のヒストグラム・接触分離・円形度フィルタ、ディスクリプタ出力。</li>
+<li><b>1.2</b>: インターバル撮影(画像間隔・タイムラプス)、HTMLレポート。</li>
+<li><b>1.1</b>: 面分析・粒子解析のリアルタイム対応、条件JSON。</li>
+<li><b>1.0</b>: 初版。</li>
+</ul>
+
+<p style="margin-top:32px;font-size:12px;color:#666">CxM Image Viewer Version 1.11 (2026-11-24) — 単一HTML・外部依存なし・インストール不要</p>
+</body>
+</html>
