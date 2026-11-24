@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CxM Image Viewer User Manual (Version 1.11)</title>
+<style>
+body{font-family:system-ui,"Segoe UI",sans-serif;max-width:960px;margin:24px auto;padding:0 16px;color:#222;line-height:1.6}
+h1{font-size:22px}h2{font-size:17px;margin-top:28px;border-bottom:2px solid #444;padding-bottom:4px}
+h3{font-size:14px;margin-top:18px}
+table{border-collapse:collapse;width:100%}td,th{border:1px solid #aaa;padding:5px 8px;font-size:13px;text-align:left}
+kbd{background:#eee;border:1px solid #bbb;border-radius:4px;padding:1px 6px;font-size:12px}
+.note{background:#f6f6ee;border-left:4px solid #8a4;padding:8px 12px;font-size:13px}
+.warn{background:#fdf0f0;border-left:4px solid #a55;padding:8px 12px;font-size:13px}
+code{background:#f4f4f4;padding:1px 5px;font-size:12px}
+.langbar{margin:8px 0}
+</style>
+</head>
+<body>
+<h1>CxM Image Viewer User Manual</h1>
+<p>For Version 1.11 / 2026-11-25
+&nbsp;<a href="index.html">日本語版</a></p>
+
+<div class="note">CxM Image Viewer is a single-HTML browser app for displaying, capturing and analyzing images
+from USB microscopes (H1612 and other UVC cameras). No installation is needed:
+just double-click the bundled <code>start_viewer.bat</code> to launch it.</div>
+
+<h2>1. Launching</h2>
+<h3>A. Local server (recommended, full features)</h3>
+<ol>
+<li>Unzip the distribution ZIP (keep <code>index.html</code>, <code>start_viewer.bat</code>, <code>serve.ps1</code> and <code>README.txt</code> in the same folder).</li>
+<li>Double-click <code>start_viewer.bat</code> → your default browser opens <code>http://127.0.0.1:8642/</code>.</li>
+<li>The app is available while the server window stays open; closing it stops the server. No Python required (Windows built-in PowerShell only).</li>
+</ol>
+<h3>B. GitHub Pages (nothing to install)</h3>
+<p>Simply open the project page (<code>https://angewandtechemie.github.io/cxm-image-viewer/</code>) in a browser.
+On this HTTPS page the camera features (live view, video, time-lapse) work as-is.
+Analysis outputs (PNG, text, CSV) are saved through normal browser downloads.</p>
+<h3>C. Opening the file directly (limited)</h3>
+<p>Double-clicking <code>index.html</code> also works, but the browser disables the camera API on file:// pages.
+Only analysis of saved images is available that way.</p>
+<p>Supported browsers: Chromium-based (Chrome / Edge / Vivaldi) and Firefox (image math requires WebGL).</p>
+
+<h2>2. Layout</h2>
+<table>
+<tr><th>Area</th><th>Contents</th></tr>
+<tr><td>Header</td><td>Grouped control buttons (camera, image, video, analysis, calibration, display). Every button has a tooltip</td></tr>
+<tr><td>Center</td><td>Video view (camera/image). In image-analysis mode a gallery (left) and control panel (right) are used</td></tr>
+<tr><td>Bottom</td><td>Status bar: resolution, fps, rotation/mirror/zoom, calibration value, mode, focus (supported cameras)</td></tr>
+</table>
+
+<h2>3. Display utilities</h2>
+<table>
+<tr><th>Item</th><th>Behavior</th></tr>
+<tr><td>Scale bar</td><td>Scale bar at the bottom of the video, centered within its black band (bar, ticks and value). Shows mm after calibration</td></tr>
+<tr><td>Timestamp</td><td>Date/time at bottom-right (baked into captured images)</td></tr>
+<tr><td>Ruler</td><td>Ticks along the top/bottom edges (uncalibrated=px, after calibration=mm)</td></tr>
+<tr><td>Sample name</td><td>Sample name at top-right (also used as the file-name prefix)</td></tr>
+<tr><td>Grid</td><td>Semi-transparent grid overlay; color and spacing (fixed 50px / auto) configurable</td></tr>
+</table>
+<div class="note">When you enter image-analysis mode (analyzing a saved image), the scale bar is automatically turned OFF
+because it would overlap the analysis results. It is automatically restored when you return to camera mode.</div>
+
+<h2>4. Camera controls</h2>
+<ul>
+<li><b>Real-time analysis</b>: shows the camera image and overlays the configured analysis in real time (~10fps).</li>
+<li><b>Camera ▾</b>: pick from connected UVC cameras (H1612, webcams, etc.).</li>
+<li><b>Resolution ▾</b>: lists the resolutions the selected camera actually supports (probed at connect time, remembered per camera).
+Use "☐ Re-query supported resolutions" to refresh the list. For the H1612, 4K (3840×2160) is the top entry.</li>
+<li><b>ch (image math)</b>: RGB / R, G, B single channel / Human Eye (R+G) / Red Enhance / Green Enhance / ExG /
+Red Index / Green Index / Blue Index / Pseudo Gray. Applied to display, capture and analysis alike.</li>
+<li><b>Focus</b>: the H1612 supports electronic focus via slider (0–255, +/- keys step by 5).</li>
+<li><b>Rotate / zoom ▾</b>: 90° rotation, mirror, digital zoom (1–8×). While zoomed, drag on the image to pan.</li>
+<li><b>Corrections ▾</b>: gamma (0.2–5.0), contrast (0.2–3.0), sharpen (0–2.0), noise reduction (median / Gaussian),
+frame averaging (SNR gain for static scenes). Includes auto white balance (gray world) and
+"Auto-correct all" (one-click WB + gamma + contrast + noise reduction + frame averaging).
+Corrections apply to camera, image, capture and analysis alike.</li>
+<li><b>Capture (S)</b>: save the current video frame as PNG (video only).</li>
+<li><b>Image analysis</b>: load an image file. The gallery keeps multiple images; click one to open it in analysis mode.</li>
+</ul>
+
+<h2>5. Video recording</h2>
+<ol>
+<li>"🎬 Video" → choose start delay (immediate / 3 s / 10 s) and record length (10 s / 30 s / Manual) → "🎬 Record video (V)".</li>
+<li>While recording, a <b>REC marker (red dot + elapsed time)</b> and a progress bar are shown at the top of the screen (not baked into the file).</li>
+<li>With "Bake analysis into recording" (default ON), measurement lines, ROIs, the stats block, plots, the scale bar etc.
+are composited into the video at full resolution. With OFF, only the video is recorded.</li>
+<li>Click again to cancel during the countdown, or to stop while recording. File: <code>samplename-video.webm</code>.</li>
+</ol>
+
+<h2>6. Interval capture</h2>
+<h3>Image interval capture</h3>
+<p>"⏱ Interval" → interval (s) and frame count (0=unlimited) → "Start image interval capture".
+Stills with scale and timestamp baked in are auto-saved as <code>samplename-001.png</code> numbered files.
+While running, a <b>progress marker (orange dot + frame count)</b> and progress bar are shown.
+Allow "automatic multiple file downloads" in your browser.</p>
+<h3>Time-lapse capture</h3>
+<p>Set the total recording time (min) and the output video length (s), then start.
+Frames are captured at the derived interval and composed into one WebM played back faster at fixed 30fps
+(<code>samplename-timelapse.webm</code>). While running, a <b>TL marker (orange dot + n/total)</b> and progress bar are shown.</p>
+
+<h2>7. Analysis functions</h2>
+<p>Modes are toggled by button or key. <b>Calibration is shared across modes</b>: once calibrated, all measurements show mm.</p>
+<table>
+<tr><th>Mode</th><th>Key</th><th>Operation</th><th>Output</th></tr>
+<tr><td>Calibration (reference length)</td><td><kbd>C</kbd></td><td>Click the two ends of a known length in the image (e.g. a scale bar) → enter its true length (mm)</td><td>mm/px value, kept per image (auto-applied at the same resolution). Calibration line displayable</td></tr>
+<tr><td>2-point distance</td><td><kbd>M</kbd></td><td>Click 2 points (drag endpoints to fine-tune)</td><td>mm length, px, angle. Multiple lines at once</td></tr>
+<tr><td>Angle</td><td><kbd>N</kbd></td><td>Click point A on one side → vertex B → point C on the other side</td><td>Interior angle at the vertex (°). No calibration needed</td></tr>
+<tr><td>Shape measure</td><td><kbd>G</kbd></td><td>Circle = 3 points on edge / Rectangle & Square = 2 diagonal corners / Region = 4 vertices</td><td>Radius, diameter, area, side lengths, diagonals. Vertices draggable</td></tr>
+<tr><td>Point analysis</td><td><kbd>P</kbd></td><td>Reference point → measurement points (multiple)</td><td>Relative XY, vector length, angle. CSV output</td></tr>
+<tr><td>Line profile</td><td><kbd>L</kbd></td><td>Drag a 2-point section line</td><td>Brightness plot (300 samples). Edge threshold auto-labels edge positions</td></tr>
+<tr><td>Area analysis</td><td><kbd>A</kbd></td><td>ROI polygon (left-click=vertex, right-click=confirm) → "Pick color" → click the target color</td><td>ROI area, target-color pixel count, coverage (%). Tolerance adjustable</td></tr>
+<tr><td>Particle analysis</td><td><kbd>K</kbd></td><td>ROI + threshold (bright/dark, Otsu auto) or hue classification (HSV). Min area, background correction, watershed split, circularity filter</td><td>Count, equivalent-circle diameter stats (mean/median/IQR/range), area stats, circularity, aspect ratio. Size histogram (log bins, ImageJ-style). CSV (one row per particle + descriptor)</td></tr>
+</table>
+<div class="note">Analysis results accumulate in the text area at the bottom. File output happens only via
+"💾 Save analysis (Shift+S)" (PNG with drawing + results text) and the per-panel CSV / HTML report.
+A TXT file is never auto-saved when an analysis is confirmed.</div>
+<h3>Save & export</h3>
+<ul>
+<li><b>💾 Save analysis (Shift+S)</b>: PNG with the analysis drawing baked in (<code>-A.png</code>) + results text (<code>-A.txt</code>).</li>
+<li><b>📄 Export report</b>: snapshot + analysis results + analysis conditions (JSON) as a single HTML report (<code>-report.html</code>).</li>
+<li><b>⚙ Conditions</b>: export/import calibration and all analysis/display settings as JSON. Reset.</li>
+</ul>
+
+<h2>8. Image comparison</h2>
+<p>"🔀 Compare" → "Freeze current frame (start)" pins the current frame as Reference (left) and shows live Sample (right).
+Per-block difference is shown as a heatmap plus a diff-block count. The Reference can also be loaded from an image file.</p>
+
+<h2>9. Keyboard shortcuts</h2>
+<table>
+<tr><th>Key</th><th>Action</th><th>Key</th><th>Action</th></tr>
+<tr><td><kbd>S</kbd></td><td>Capture</td><td><kbd>C</kbd></td><td>Calibration mode</td></tr>
+<tr><td><kbd>V</kbd></td><td>Record start/stop</td><td><kbd>M</kbd></td><td>2-point distance</td></tr>
+<tr><td><kbd>L</kbd></td><td>Line profile</td><td><kbd>A</kbd></td><td>Area analysis</td></tr>
+<tr><td><kbd>K</kbd></td><td>Particle analysis</td><td><kbd>P</kbd></td><td>Point analysis</td></tr>
+<tr><td><kbd>N</kbd></td><td>Angle</td><td><kbd>G</kbd></td><td>Shape measure</td></tr>
+<tr><td><kbd>R</kbd></td><td>Rotate 90°</td><td><kbd>Shift+S</kbd></td><td>Save analysis</td></tr>
+<tr><td><kbd>Esc</kbd></td><td>Cancel / leave mode</td><td><kbd>+</kbd>/<kbd>-</kbd></td><td>Focus ±5 (supported cameras)</td></tr>
+</table>
+
+<h2>10. Troubleshooting</h2>
+<table>
+<tr><th>Symptom</th><th>Fix</th></tr>
+<tr><td>"Record/Camera start failed"</td><td>Another app (the stock viewer, etc.) holds the camera → close it. Check the browser's camera permission</td></tr>
+<tr><td>No camera on file:// page</td><td>The camera API is disabled on file://. Use <code>start_viewer.bat</code> or GitHub Pages</td></tr>
+<tr><td>Desired resolution missing from the list</td><td>Only resolutions the camera really supports are listed. Try "☐ Re-query supported resolutions"</td></tr>
+<tr><td>Image looks yellow/green</td><td>"Corrections ▾" → "Auto white balance" or "Auto-correct all"</td></tr>
+<tr><td>Particles fragmented</td><td>Lower the threshold / raise background correction / raise min area</td></tr>
+<tr><td>Touching particles merge into one</td><td>Enable "Watershed split"</td></tr>
+<tr><td>Lengths still in px</td><td>Calibrate with <kbd>C</kbd> (use a reference length in the image)</td></tr>
+<tr><td>Scale bar disappeared in image-analysis mode</td><td>By design (auto OFF). Restored when returning to camera mode. Re-enable via "Display ON/OFF" → Scale bar if needed</td></tr>
+<tr><td>Nothing downloaded</td><td>Allow automatic multiple file downloads in the browser</td></tr>
+</table>
+
+<h2>11. Version history</h2>
+<ul>
+<li><b>1.11</b>: Removed the auto TXT save on every analysis confirmation (file output only via Shift+S and CSV/report). Scale bar, label and info line centered within the black band.</li>
+<li><b>1.9–1.10</b>: Analysis baked into video recording ("Bake analysis into recording", default ON). Scale bar simplified to a single bar.</li>
+<li><b>1.7–1.8</b>: Resolution menu based on the camera's actual supported list (per-camera memory, re-query). Progress markers and progress bars for video/time-lapse. Image math reflected in recordings.</li>
+<li><b>1.6</b>: Scale bar auto-OFF when entering image-analysis mode, auto-restore on return.</li>
+<li><b>1.5</b>: Ten image-math channels, auto white balance & one-click auto-correction, noise reduction & frame averaging, image comparison, image gallery.</li>
+<li><b>1.4</b>: Shape measurement (circle/rectangle/square/region), angle measurement.</li>
+<li><b>1.3</b>: Particle histogram, watershed split, circularity filter, descriptor output.</li>
+<li><b>1.2</b>: Interval capture (image interval & time-lapse), HTML report.</li>
+<li><b>1.1</b>: Real-time area/particle analysis, conditions JSON.</li>
+<li><b>1.0</b>: Initial release.</li>
+</ul>
+
+<p style="margin-top:32px;font-size:12px;color:#666">CxM Image Viewer Version 1.11 (2026-11-24) — single HTML file, no dependencies, no installation</p>
+</body>
+</html>
