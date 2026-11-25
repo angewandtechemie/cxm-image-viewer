@@ -41,4 +41,13 @@ Opening `index.html` directly (file://) works for saved-image analysis only — 
 - The English app is generated from the Japanese source by a string-translation build; keep both files in sync when updating.
 - Camera features require a secure context: `https://` (GitHub Pages) or `http://127.0.0.1`.
 
+## Development / 開発(このリポジトリが本体)
+
+- Serve & test: `py -m http.server 8642 --bind 0.0.0.0` in this folder, then
+  `py scripts/cdp_base_test.py` (desktop, 17 checks), `py scripts/cdp_mobile_test.py` (phone, 24 checks, 390x844 emulation),
+  plus the other `scripts/cdp_*.py` regression suites. Requires a Chromium browser with `--remote-debugging-port=9222`.
+- Local launchers: `start_viewer.bat` (desktop, localhost) / `start_mobile.bat` (LAN serving, prints the phone URL).
+- EN builds: desktop `app/index-en.html` (string-translation build), phone `tools/build_en_mobile.py`.
+- The former dev-only repo `W:\hermes\apps\microscope-viewer` is archived (2026-11-25); this repo is the single source.
+
 Version 1.11 (2026-11-24) — see the manual's version history.
