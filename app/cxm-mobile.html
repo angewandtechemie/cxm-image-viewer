@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>CxM Mobile</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+  html, body { height: 100%; margin: 0; background: #101010; color: #ddd;
+    font-family: system-ui, "Yu Gothic UI", sans-serif; overflow: hidden; }
+  body { display: flex; flex-direction: column; }
+  #top { display: flex; align-items: center; gap: 8px; padding: calc(6px + env(safe-area-inset-top)) 10px 6px;
+    background: #181818; border-bottom: 1px solid #2c2c2c; flex: none; }
+  #ttl { font-weight: 700; font-size: 15px; color: #8fb48f; }
+  #ver { font-size: 10px; color: #666; font-weight: 400; }
+  #top button { flex: none; }
+  button { background: #2a2a2a; color: #ddd; border: 1px solid #444; border-radius: 10px;
+    min-height: 40px; padding: 8px 12px; font-size: 14px; }
+  button.on { background: #2e5d34; border-color: #58a860; color: #fff; }
+  button:disabled { opacity: .4; }
+  #stage { flex: 1; position: relative; min-height: 0; background: #000; }
+  #video, #fileimg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+  #fileimg { display: none; }
+  #overlay, #cmpcv { position: absolute; inset: 0; width: 100%; height: 100%; }
+  #cmpcv { display: none; }
+  #panel { flex: none; background: #181818; border-top: 1px solid #2c2c2c; padding: 8px 10px;
+    display: none; gap: 8px; flex-wrap: wrap; align-items: center; }
+  #panel.show { display: flex; }
+  #panel .lab { font-size: 12px; color: #9ab; }
+  .numin { width: 64px; background: #2a2a2a; color: #ddd; border: 1px solid #444; border-radius: 8px;
+    min-height: 40px; padding: 6px 8px; font-size: 15px; }
+  input[type=range] { min-width: 120px; }
+  #talinfo { font-size: 11px; color: #9a9; width: 100%; }
+  #res { font-family: monospace; font-size: 12px; color: #cde; white-space: pre; width: 100%;
+    max-height: 22vh; overflow-y: auto; }
+  #tabs { flex: none; display: flex; gap: 6px; padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
+    background: #181818; border-top: 1px solid #2c2c2c; }
+  #tabs button { flex: 1; min-height: 56px; font-size: 14px; border-radius: 12px; }
+  #status { flex: none; background: #141414; color: #9a9; font-size: 11px; padding: 4px 10px;
+    font-family: monospace; }
+  #toast { position: fixed; left: 50%; bottom: 150px; transform: translateX(-50%); background: rgba(20,60,25,.95);
+    border: 1px solid #58a860; color: #fff; padding: 10px 16px; border-radius: 10px; font-size: 13px;
+    display: none; z-index: 50; max-width: 90vw; }
+</style>
+</head>
+<body>
+<div id="top">
+  <span id="ttl">CxM Mobile <span id="ver"></span></span>
+  <span style="flex:1"></span>
+  <button id="flip" title="カメラ切替">🔄</button>
+  <button id="open" title="写真を読み込み">🖼</button>
+  <button id="calbtn" title="既知の長さ2点タップ→実寸入力">較正</button>
+</div>
+<div id="stage">
+  <video id="video" autoplay playsinline muted></video>
+  <img id="fileimg" alt="">
+  <canvas id="cmpcv"></canvas>
+  <canvas id="overlay"></canvas>
+</div>
+<div id="panel">
+  <!-- 測定系(線分・角度) -->
+  <span data-p="meas">
+    <button id="undo">戻す</button>
+    <button id="clr">全消去</button>
+    <button id="saveimg">画像保存</button>
+  </span>
+  <pre data-p="meas" id="res"></pre>
+  <!-- 差異検出 -->
+  <span data-p="cmp" style="display:none">
+    <button id="cmpcap">現在を固定</button>
+    <button id="cmpfile">基準を写真から</button>
+    <span class="lab">閾値</span><input id="cmthr" type="range" min="5" max="255" step="5" value="40"><span id="cmthrv" class="lab">40</span>
+    <button id="cmsoff">終了</button>
+  </span>
+  <!-- タイムラプス -->
+  <span data-p="tal" style="display:none">
+    <span class="lab">合計</span><input id="taltotal" class="numin" type="number" min="1" max="1440" value="10">分を
+    <input id="taln" class="numin" type="number" min="1" max="600" value="30">秒に短縮
+    <button id="talbtn">開始</button>
+  </span>
+  <div id="talinfo" style="display:none"></div>
+</div>
+<div id="tabs">
+  <button id="m-seg" class="on">📏 線分</button>
+  <button id="m-ang">∠ 角度</button>
+  <button id="m-cmp">🔀 差異</button>
+  <button id="m-tal">⏱ タイムラプス</button>
+</div>
+<div id="status">起動中…</div>
+<div id="toast"></div>
+<input type="file" id="fileopen" accept="image/*" style="display:none">
+<input type="file" id="cmppicfile" accept="image/*" style="display:none">
+
+<script>
+const APP_VER = 'v1.0 (2026-11-24)';
+$('ver').textContent = APP_VER;
+function $(id) { return document.getElementById(id); }
+const video = $('video'), fileimg = $('fileimg'), stage = $('stage'), overlay = $('overlay');
+const cmpcv = $('cmpcv'), status = $('status');
+
+let stream = null, facing = 'environment', mode = 'seg';
+let segs = [], angPts = [], angles = [];
+let pending = null;               // 線分の1点目 / 角度の途中点列はangPts
+let calActive = false, calA = null;
+let calMap = JSON.parse(localStorage.getItem('cxmm-cal') || '{}');
+let cmpOn = false, cmpRef = null, cmpThr = 40;
+const CMP_BLK = 16;
+let talRun = false, talTimer = null, talFrames = [];
+const OFS = 16;                   // オーバーレイ文字サイズ(スマホ向け)
+
+function toast(msg, ms = 2500) {
+  const t = $('toast'); t.textContent = msg; t.style.display = 'block';
+  clearTimeout(toast.h); toast.h = setTimeout(() => t.style.display = 'none', ms);
+}
+function srcOK() { return (stream && video.videoWidth) || (fileimg.src && fileimg.naturalWidth); }
+function srcW() { return stream ? video.videoWidth : (fileimg.naturalWidth || 0); }
+function srcH() { return stream ? video.videoHeight : (fileimg.naturalHeight || 0); }
+function srcEl() { return stream && !fileimg.src ? video : fileimg; }
+function curKey() { return srcW() + 'x' + srcH(); }
+function mmPerPx() { return calMap[curKey()] || null; }
+
+// ---- 座標変換(映像はcontain表示) ----
+function vfit() {
+  const sw = stage.clientWidth, sh = stage.clientHeight, vw = srcW(), vh = srcH();
+  if (!vw || !vh) return { s: 1, ox: 0, oy: 0 };
+  const s = Math.min(sw / vw, sh / vh);
+  return { s, ox: (sw - vw * s) / 2, oy: (sh - vh * s) / 2 };
+}
+const toImg = (cx, cy) => { const f = vfit(); return { x: (cx - f.ox) / f.s, y: (cy - f.oy) / f.s }; };
+const toStg = p => { const f = vfit(); return { x: p.x * f.s + f.ox, y: p.y * f.s + f.oy }; };
+
+// ---- 単位・フォーマット(デスクトップ版と同一) ----
+const MON3 = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function fmtDT(d = new Date()) {
+  const p = n => String(n).padStart(2, '0');
+  return `${MON3[d.getMonth()]}-${p(d.getDate())}-${d.getFullYear()} ` +
+         `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+}
+function fmtLen(mm) {
+  if (mm >= 1) return mm.toFixed(2) + ' mm';
+  if (mm >= 0.1) return mm.toFixed(2) + ' mm';
+  return Math.round(mm * 1000) + ' µm';
+}
+function niceScaleMm(mpp) {
+  const raw = 0.2 * srcW() * mpp;
+  const p = Math.pow(10, Math.floor(Math.log10(raw)));
+  let old = 10 * p;
+  for (const m of [1, 2, 5, 10]) if (m * p >= raw * 0.7) { old = m * p; break; }
+  const half = old / 2;
+  const p2 = Math.pow(10, Math.floor(Math.log10(half)));
+  return [p2, 2 * p2, 5 * p2, 10 * p2].reduce((a, b) => Math.abs(b - half) < Math.abs(a - half) ? b : a);
+}
+function drawScaleBar(ctx, mpp, barFn, x2, y2, fs, info = []) {
+  const mm = niceScaleMm(mpp), label = fmtLen(mm);
+  const bar = barFn(mm);
+  ctx.font = fs + 'px monospace';
+  const labW = ctx.measureText(label).width;
+  const infoW = Math.max(0, ...info.map(t => ctx.measureText(t).width));
+  const pad = Math.max(6, fs * 0.4), tickH = Math.max(8, fs * 0.7), lw = Math.max(2, fs * 0.12);
+  const lineH = fs * 1.3;
+  const boxW = Math.max(bar, labW, infoW) + pad * 2;
+  const boxH = pad * 2 + tickH * 2 + fs + lineH * info.length;
+  const bx = x2 - boxW, by = y2 - boxH;
+  ctx.fillStyle = 'rgba(0,0,0,.85)'; ctx.fillRect(bx, by, boxW, boxH);
+  ctx.strokeStyle = '#fff'; ctx.lineWidth = lw;
+  const ly = by + pad + tickH, lx1 = bx + pad, lx2 = bx + pad + bar;
+  ctx.beginPath();
+  ctx.moveTo(lx1, ly); ctx.lineTo(lx2, ly);
+  ctx.moveTo(lx1, ly - tickH); ctx.lineTo(lx1, ly + tickH);
+  ctx.moveTo(lx2, ly - tickH); ctx.lineTo(lx2, ly + tickH);
+  ctx.stroke();
+  ctx.beginPath();
+  for (let i = 1; i < 10; i++) {
+    const x = lx1 + bar * i / 10;
+    const h = i === 5 ? tickH : tickH * 2 / 3;
+    ctx.moveTo(x, ly - h); ctx.lineTo(x, ly + h);
+  }
+  ctx.stroke();
+  ctx.fillStyle = '#fff';
+  ctx.fillText(label, lx1 + (bar - labW) / 2, ly + tickH + fs);
+  let ty = ly + tickH + fs + lineH;
+  for (const t of info) { ctx.fillText(t, bx + (boxW - ctx.measureText(t).width) / 2, ty); ty += lineH; }
+}
+const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+function angDeg(a, b, c) {
+  const a1 = Math.atan2(a.y - b.y, a.x - b.x), a2 = Math.atan2(c.y - b.y, c.x - b.x);
+  let d = Math.abs(a1 - a2) * 180 / Math.PI;
+  if (d > 180) d = 360 - d;
+  return d;
+}
+const fmtD = d => { const m = mmPerPx(); return m ? fmtLen(d * m) : Math.round(d) + 'px'; };
+
+// ---- オーバーレイ ----
+function sizeCanvases() {
+  const w = stage.clientWidth, h = stage.clientHeight;
+  for (const c of [overlay, cmpcv]) if (c.width !== w || c.height !== h) { c.width = w; c.height = h; }
+}
+function drawOverlay() {
+  sizeCanvases();
+  const ctx = overlay.getContext('2d');
+  ctx.clearRect(0, 0, overlay.width, overlay.height);
+  if (!srcOK()) return;
+  ctx.font = OFS + 'px monospace'; ctx.lineWidth = 2;
+  const put = (t, P, col) => {
+    const tw = ctx.measureText(t).width;
+    ctx.fillStyle = 'rgba(0,0,0,.7)'; ctx.fillRect(P.x - tw / 2 - 4, P.y - 20, tw + 8, OFS + 6);
+    ctx.fillStyle = col; ctx.fillText(t, P.x - tw / 2, P.y - 6);
+  };
+  // 線分
+  for (const L of segs) {
+    const A = toStg(L.a), B = toStg(L.b);
+    ctx.strokeStyle = 'rgba(80,220,120,.95)';
+    ctx.beginPath(); ctx.moveTo(A.x, A.y); ctx.lineTo(B.x, B.y); ctx.stroke();
+    for (const P of [A, B]) { ctx.beginPath(); ctx.arc(P.x, P.y, 4, 0, 7); ctx.stroke(); }
+    put(fmtD(dist(L.a, L.b)), { x: (A.x + B.x) / 2, y: (A.y + B.y) / 2 }, '#ffd76a');
+  }
+  if (mode === 'seg' && pending) {
+    const A = toStg(pending);
+    ctx.strokeStyle = 'rgba(255,80,80,.8)';
+    ctx.beginPath(); ctx.arc(A.x, A.y, 6, 0, 7); ctx.stroke();
+  }
+  // 角度
+  for (const o of angles) {
+    const A = toStg(o.a), B = toStg(o.b), C = toStg(o.c);
+    ctx.strokeStyle = 'rgba(255,179,71,.95)';
+    ctx.beginPath(); ctx.moveTo(A.x, A.y); ctx.lineTo(B.x, B.y); ctx.lineTo(C.x, C.y); ctx.stroke();
+    for (const P of [A, B, C]) { ctx.beginPath(); ctx.arc(P.x, P.y, 4, 0, 7); ctx.stroke(); }
+    put('∠' + angDeg(o.a, o.b, o.c).toFixed(2) + '°', B, '#ffc96a');
+  }
+  if (mode === 'ang' && angPts.length) {
+    ctx.strokeStyle = 'rgba(255,179,71,.6)';
+    let prev = null;
+    for (const q of angPts) {
+      const P = toStg(q);
+      ctx.beginPath(); ctx.arc(P.x, P.y, 6, 0, 7); ctx.stroke();
+      if (prev) { ctx.beginPath(); ctx.moveTo(prev.x, prev.y); ctx.lineTo(P.x, P.y); ctx.stroke(); }
+      prev = P;
+    }
+  }
+  // 較正入力中
+  if (calActive && calA) {
+    const A = toStg(calA);
+    ctx.strokeStyle = 'rgba(120,170,255,.9)';
+    ctx.beginPath(); ctx.arc(A.x, A.y, 6, 0, 7); ctx.stroke();
+    put('較正: 終点タップ', A, '#8fb4ff');
+  }
+  // スケールバー(較正時のみ)
+  const mpp = mmPerPx();
+  if (mpp) {
+    const f = vfit();
+    drawScaleBar(ctx, mpp, mm => mm / mpp * f.s, overlay.width - 8, overlay.height - 8, OFS, [fmtDT()]);
+  }
+}
+
+// ---- 結果テキスト ----
+function resultsText() {
+  const L = [];
+  segs.forEach((s, i) => L.push(`線分${i + 1}: ${fmtD(dist(s.a, s.b))} (${Math.round(dist(s.a, s.b))}px)`));
+  angles.forEach((o, i) => L.push(`角度${i + 1}: ${angDeg(o.a, o.b, o.c).toFixed(2)}°`));
+  $('res').textContent = L.join('\n');
+}
+
+// ---- 入力(pointerdown: マウス/タッチ共通) ----
+stage.addEventListener('pointerdown', e => {
+  if (!srcOK() || cmpOn || talRun) return;
+  const p = toImg(e.clientX - stage.getBoundingClientRect().left, e.clientY - stage.getBoundingClientRect().top);
+  if (calActive) {
+    if (!calA) { calA = p; drawOverlay(); }
+    else {
+      const d = dist(calA, p);
+      const v = parseFloat(prompt(`基準長の実際(mm)を入力\n画面長: ${Math.round(d)}px`, ''));
+      if (v > 0) {
+        calMap[curKey()] = v / d;
+        localStorage.setItem('cxmm-cal', JSON.stringify(calMap));
+        toast(`較正完了: ${(v / d).toFixed(5)} mm/px`);
+      } else toast('較正を取り消しました');
+      calActive = false; calA = null; $('calbtn').classList.remove('on');
+      drawOverlay(); statusUpd();
+    }
+    return;
+  }
+  if (mode === 'seg') {
+    if (!pending) pending = p;
+    else { segs.push({ a: pending, b: p }); pending = null; resultsText(); }
+  } else if (mode === 'ang') {
+    angPts.push(p);
+    if (angPts.length === 3) { angles.push({ a: angPts[0], b: angPts[1], c: angPts[2] }); angPts = []; resultsText(); }
+  }
+  drawOverlay();
+});
+
+// ---- モード切替 ----
+function setMode(m) {
+  mode = m;
+  pending = null; angPts = [];
+  for (const id of ['m-seg', 'm-ang', 'm-cmp', 'm-tal']) $(id).classList.remove('on');
+  $('m-' + m).classList.add('on');
+  for (const el of document.querySelectorAll('[data-p]')) el.style.display = 'none';
+  const pmap = { seg: 'meas', ang: 'meas', cmp: 'cmp', tal: 'tal' };
+  for (const el of document.querySelectorAll('[data-p="' + pmap[m] + '"]')) el.style.display = '';
+  $('panel').classList.add('show');
+  $('talinfo').style.display = m === 'tal' ? '' : 'none';
+  cmpcv.style.display = 'none'; video.style.display = ''; fileimg.style.display = fileimg.src ? '' : 'none';
+  if (m !== 'cmp' && cmpOn) endCmp();
+  if (m === 'tal') talInfo();
+  statusUpd(); drawOverlay();
+}
+for (const [id, m] of [['m-seg', 'seg'], ['m-ang', 'ang'], ['m-cmp', 'cmp'], ['m-tal', 'tal']])
+  $(id).onclick = () => setMode(m);
+$('undo').onclick = () => {
+  if (angPts.length) angPts.pop();
+  else if (segs.length) segs.pop();
+  else if (angles.length) angles.pop();
+  else pending = null;
+  resultsText(); drawOverlay();
+};
+$('clr').onclick = () => { segs = []; angles = []; angPts = []; pending = null; resultsText(); drawOverlay(); };
+$('calbtn').onclick = () => {
+  calActive = !calActive; calA = null;
+  $('calbtn').classList.toggle('on', calActive);
+  if (calActive) toast('既知の長さの始点・終点の順に2回タップしてください');
+  drawOverlay();
+};
+
+// ---- 差異検出(上下分割: 上=Reference / 下=Sample) ----
+function endCmp() { cmpOn = false; cmpRef = null; cmpcv.style.display = 'none'; video.style.display = ''; }
+$('cmpcap').onclick = () => {
+  if (!srcOK()) return;
+  const c = document.createElement('canvas');
+  c.width = srcW(); c.height = srcH();
+  c.getContext('2d').drawImage(srcEl(), 0, 0, c.width, c.height);
+  cmpRef = c; cmpOn = true;
+  video.style.display = 'none'; cmpcv.style.display = 'block';
+  toast('基準を固定しました(上=Reference / 下=Sample)');
+};
+$('cmpfile').onclick = () => $('cmppicfile').click();
+$('cmppicfile').onchange = e => {
+  const f = e.target.files[0]; if (!f) return;
+  const img = new Image();
+  img.onload = () => {
+    const c = document.createElement('canvas');
+    c.width = srcW() || img.width; c.height = srcH() || img.height;
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);  // 現解像度に伸長
+    cmpRef = c; cmpOn = true;
+    video.style.display = 'none'; cmpcv.style.display = 'block';
+    toast('基準画像を設定しました');
+  };
+  img.src = URL.createObjectURL(f);
+};
+$('cmsoff').onclick = () => { endCmp(); drawOverlay(); };
+$('cmthr').oninput = () => { cmpThr = +$('cmthr').value; $('cmthrv').textContent = cmpThr; };
+function cmpDraw() {
+  if (!cmpOn || !cmpRef) return;
+  sizeCanvases();
+  const ctx = cmpcv.getContext('2d');
+  const W = cmpcv.width, H = cmpcv.height;
+  ctx.clearRect(0, 0, W, H);
+  const half = H / 2;
+  const fit = (cw, ch) => { const s = Math.min(W / cw, half / ch); return { w: cw * s, h: ch * s, x: (W - cw * s) / 2, y: (half - ch * s) / 2 }; };
+  const f1 = fit(cmpRef.width, cmpRef.height);
+  ctx.drawImage(cmpRef, f1.x, f1.y, f1.w, f1.h);
+  const src = srcEl();
+  const f2 = fit(srcW(), srcH());
+  ctx.drawImage(src, f2.x, half + f2.y, f2.w, f2.h);
+  // 差分ブロック: 同一サイズに縮小して比較
+  const n = 160, m = Math.max(2, Math.round(160 * cmpRef.height / cmpRef.width));
+  const g1 = grab(cmpRef, n, m), g2 = grab(src, n, m);
+  ctx.fillStyle = 'rgba(255,60,60,.45)';
+  const bw = f2.w / n, bh = f2.h / m;
+  for (let y = 0; y < m; y++) for (let x = 0; x < n; x++) {
+    const i = (y * n + x) * 3;
+    const d = Math.max(Math.abs(g1[i] - g2[i]), Math.abs(g1[i+1] - g2[i+1]), Math.abs(g1[i+2] - g2[i+2]));
+    if (d >= cmpThr) ctx.fillRect(f2.x + x * bw, half + f2.y + y * bh, bw + 0.5, bh + 0.5);
+  }
+  ctx.font = OFS + 'px monospace'; ctx.fillStyle = '#ffd76a';
+  ctx.fillText('Reference', 8, 20); ctx.fillText('Sample', 8, half + 20);
+}
+const grabC = document.createElement('canvas');
+function grab(el, w, h) {
+  grabC.width = w; grabC.height = h;
+  const g = grabC.getContext('2d', { willReadFrequently: true });
+  g.drawImage(el, 0, 0, w, h);
+  return g.getImageData(0, 0, w, h).data;
+}
+
+// ---- タイムラプス ----
+function talParams() {
+  const total = Math.max(1, +$('taltotal').value || 10) * 60;
+  const target = Math.max(1, +$('taln').value || 30);
+  const x = total / target;
+  const T = Math.max(1, x / 30);
+  return { total, target, x, T, frames: Math.floor(total / T) };
+}
+function talInfo() {
+  const p = talParams();
+  $('talinfo').textContent = `→ ${Math.round(p.x)}倍速・撮影間隔${p.T.toFixed(1)}秒・${p.frames}枠・30fps`;
+}
+$('taltotal').oninput = talInfo; $('taln').oninput = talInfo;
+$('talbtn').onclick = () => {
+  if (talRun) { talStop(true); return; }
+  if (!stream) { toast('タイムラプスにはライブ映像が必要です'); return; }
+  const p = talParams();
+  talRun = true; talFrames = [];
+  $('talbtn').textContent = '停止'; $('talbtn').classList.add('on');
+  toast(`タイムラプス開始: ${p.frames}枠・間隔${p.T.toFixed(1)}秒`);
+  talCap();
+  talTimer = setInterval(talCap, p.T * 1000);
+};
+function talCap() {
+  const p = talParams();
+  const c = document.createElement('canvas');
+  c.width = srcW(); c.height = srcH();
+  c.getContext('2d').drawImage(video, 0, 0, c.width, c.height);
+  c.toBlob(b => { if (b) talFrames.push(b); }, 'image/jpeg', 0.9);
+  if (talFrames.length + 1 >= p.frames) talStop(true);
+}
+async function talStop(compose) {
+  talRun = false; clearInterval(talTimer);
+  $('talbtn').textContent = '開始'; $('talbtn').classList.remove('on');
+  if (!compose || !talFrames.length) return;
+  toast(`合成中… ${talFrames.length}枠`);
+  const frames = talFrames; talFrames = [];
+  try {
+    const bitmaps = [];
+    for (const b of frames) bitmaps.push(await createImageBitmap(b));
+    const c = document.createElement('canvas');
+    c.width = bitmaps[0].width; c.height = bitmaps[0].height;
+    const ctx = c.getContext('2d');
+    const stream2 = c.captureStream(0);
+    const vtrack = stream2.getVideoTracks()[0];
+    const mime = ['video/webm;codecs=vp9', 'video/webm', 'video/mp4'].find(m => MediaRecorder.isTypeSupported(m));
+    const rec = new MediaRecorder(stream2, mime ? { mimeType: mime } : undefined);
+    const chunks = [];
+    rec.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
+    const done = new Promise(r => rec.onstop = r);
+    rec.start();
+    for (const bm of bitmaps) {
+      ctx.drawImage(bm, 0, 0);
+      vtrack.requestFrame();
+      await new Promise(r => setTimeout(r, 1000 / 30));
+    }
+    rec.stop(); await done;
+    const ext = (rec.mimeType || '').includes('mp4') ? 'mp4' : 'webm';
+    const blob = new Blob(chunks, { type: rec.mimeType || 'video/webm' });
+    const name = `timelapse-${fmtDT().replace(/[: ]/g, '-')}.${ext}`;
+    saveOrShare(blob, name);
+  } catch (err) { toast('合成に失敗: ' + err); }
+}
+async function saveOrShare(blob, name) {
+  const file = new File([blob], name, { type: blob.type });
+  try {
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file] });
+      toast('共有しました'); return;
+    }
+  } catch (e) { /* ユーザー取消・非ジェスチャ→ダウンロードへ */ }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = name; a.click();
+  toast('保存しました: ' + name);
+}
+
+// ---- 画像保存(結果焼き込み) ----
+$('saveimg').onclick = async () => {
+  if (!srcOK()) return;
+  const c = document.createElement('canvas');
+  c.width = srcW(); c.height = srcH();
+  const ctx = c.getContext('2d');
+  ctx.drawImage(srcEl(), 0, 0, c.width, c.height);
+  ctx.font = OFS + 'px monospace'; ctx.lineWidth = 2;
+  const put = (t, P, col) => {
+    const tw = ctx.measureText(t).width;
+    ctx.fillStyle = 'rgba(0,0,0,.7)'; ctx.fillRect(P.x - tw / 2 - 4, P.y - 24, tw + 8, OFS + 8);
+    ctx.fillStyle = col; ctx.fillText(t, P.x - tw / 2, P.y - 8);
+  };
+  for (const L of segs) {
+    ctx.strokeStyle = 'rgba(80,220,120,.95)';
+    ctx.beginPath(); ctx.moveTo(L.a.x, L.a.y); ctx.lineTo(L.b.x, L.b.y); ctx.stroke();
+    put(fmtD(dist(L.a, L.b)), { x: (L.a.x + L.b.x) / 2, y: (L.a.y + L.b.y) / 2 }, '#ffd76a');
+  }
+  for (const o of angles) {
+    ctx.strokeStyle = 'rgba(255,179,71,.95)';
+    ctx.beginPath(); ctx.moveTo(o.a.x, o.a.y); ctx.lineTo(o.b.x, o.b.y); ctx.lineTo(o.c.x, o.c.y); ctx.stroke();
+    put('∠' + angDeg(o.a, o.b, o.c).toFixed(2) + '°', o.b, '#ffc96a');
+  }
+  const mpp = mmPerPx();
+  if (mpp) drawScaleBar(ctx, mpp, mm => mm / mpp, c.width - 12, c.height - 12, Math.max(16, c.width / 60), [fmtDT()]);
+  c.toBlob(b => { saveOrShare(b, `cxm-${fmtDT().replace(/[: ]/g, '-')}.png`); }, 'image/png');
+};
+
+// ---- カメラ・ファイル ----
+async function start() {
+  if (stream) stream.getTracks().forEach(t => t.stop());
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facing, width: { ideal: 1920 } }, audio: false });
+    video.srcObject = stream;
+    await video.play();
+  } catch (e) { toast('カメラ起動失敗: ' + e.message); }
+  statusUpd();
+}
+$('flip').onclick = () => { facing = facing === 'environment' ? 'user' : 'environment'; start(); };
+$('open').onclick = () => $('fileopen').click();
+$('fileopen').onchange = e => {
+  const f = e.target.files[0]; if (!f) return;
+  if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+  fileimg.src = URL.createObjectURL(f);
+  fileimg.onload = () => { video.style.display = 'none'; fileimg.style.display = ''; statusUpd(); drawOverlay(); };
+};
+function statusUpd() {
+  const mpp = mmPerPx();
+  status.textContent = `${srcW()}×${srcH()} 較正=${mpp ? mpp.toFixed(5) + 'mm/px' : '未'} モード=${{seg:'線分測定',ang:'角度測定',cmp:'差異検出',tal:'タイムラプス'}[mode]}` +
+    (segs.length || angles.length ? ` 測定=${segs.length}+${angles.length}` : '');
+}
+function loop() {
+  if (cmpOn) cmpDraw(); else drawOverlay();
+  requestAnimationFrame(loop);
+}
+addEventListener('resize', () => { sizeCanvases(); drawOverlay(); });
+$('res').style.display = '';
+setMode('seg');
+start().then(loop);
+</script>
+</body>
+</html>

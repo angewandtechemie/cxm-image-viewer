@@ -12,6 +12,9 @@ Microscope camera viewer & image analyzer — a single HTML file that runs in an
 | `index.html` | Landing page (EN/JP entry) |
 | `app/index.html` | App, Japanese (Version 1.11) |
 | `app/index-en.html` | App, English (Version 1.11) |
+| `app/cxm-mobile.html` | Phone app, Japanese (segment/angle/difference/time-lapse only) |
+| `app/cxm-mobile-en.html` | Phone app, English (built by `tools/build_en_mobile.py`) |
+| `tools/build_en_mobile.py` | String-translation build for the phone app |
 | `manual/index.html` | User manual, Japanese |
 | `manual/index-en.html` | User manual, English |
 | `downloads/` | Offline ZIP bundle (`start_viewer.bat` + `serve.ps1`, no Python needed) |
