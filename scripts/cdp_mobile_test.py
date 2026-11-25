@@ -33,7 +33,7 @@ async def main():
     for _ in range(25):
         await asyncio.sleep(1)
         if await ev("!!window.setMode && !!window.talParams"): break
-    chk('アプリ読込', 'v1.0' in str(await ev("APP_VER")), await ev("APP_VER"))
+    chk('アプリ読込', 'v1.1' in str(await ev("APP_VER")), await ev("APP_VER"))
     # promptは自動応答(較正で'10'mm)
     await ev("window.prompt = () => '10'; void 0")
     # カメラ起動待ち
@@ -91,6 +91,14 @@ async def main():
     px = await ev("""(() => { const d = cmpcv.getContext('2d').getImageData(0, 0, cmpcv.width, cmpcv.height/2).data;
       let n=0; for (let i=3;i<d.length;i+=4) if (d[i]>0) n++; return n; })()""")
     chk('差異: 上半にReference描画', (px or 0) > 50000, px)  # 390x~219のcontain描画≈85kpx
+    div = await ev("""(() => { const W=cmpcv.width, H=cmpcv.height;
+      const d = cmpcv.getContext('2d').getImageData(0, 0, W, H).data;
+      const ylw=(x,y)=>{const i=(y*W+x)*4;return d[i]>200&&d[i+1]>180&&d[i+2]<170&&d[i+3]>200;};
+      let h=0; for(let x=0;x<W;x++) if(ylw(x,Math.round(H/2))) h++;
+      let v=0; for(let y=0;y<H;y++) if(ylw(Math.round(W/2),y)) v++;
+      return JSON.stringify({h,v,W,H}); })()""")
+    dv = json.loads(div)
+    chk('差異: 縦画面は上下分割(横境界線)', dv['h'] > 0.8*dv['W'] and dv['v'] < 0.2*dv['H'], dv)
     await ev("$('cmsoff').click(); void 0")
     chk('差異: 終了', await ev("cmpOn") is False)
     # --- タイムラプス ---
@@ -121,6 +129,41 @@ async def main():
         t = str(await ev("$('toast').textContent"))
         if '保存' in t or '共有' in t: done = True; break
     chk('画像保存(焼き込み)', done, t)
+    # --- 横画面(844x390): レイアウト圧縮+比較の左右分割 ---
+    await cmd('Emulation.setDeviceMetricsOverride', width=844, height=390, deviceScaleFactor=2, mobile=True)
+    await cmd('Page.navigate', url='http://127.0.0.1:8642/app/cxm-mobile.html?m=3')
+    for _ in range(25):
+        await asyncio.sleep(1)
+        if await ev("!!window.setMode && !!window.talParams"): break
+    cam = False
+    for _ in range(15):
+        if (await ev("video.videoWidth || (fileimg.naturalWidth||0)")): cam = True; break
+        await asyncio.sleep(1)
+    chk('横画面: 映像ソース起動', cam)
+    lay = await ev("""(() => {
+      const bs = ['m-seg','m-ang','m-cmp','m-tal'].map(i=>document.getElementById(i).getBoundingClientRect());
+      const st = stage.getBoundingClientRect();
+      return JSON.stringify({tops:[...new Set(bs.map(b=>Math.round(b.top)))],
+        right: Math.round(Math.max(...bs.map(b=>b.right))), stageH: Math.round(st.height)});
+    })()""")
+    lay = json.loads(lay)
+    chk('横画面: タブ1行・幅844以内', len(lay['tops'])==1 and lay['right']<=844, lay)
+    chk('横画面: stage高さ>=180px', lay['stageH']>=180, lay)
+    await ev("$('m-cmp').click(); void 0")
+    await ev("$('cmpcap').click(); void 0")
+    await asyncio.sleep(0.5)
+    chk('横画面: 差異基準固定', await ev("cmpOn && cmpRef && cmpRef.width>0") is True)
+    div = await ev("""(() => { const W=cmpcv.width, H=cmpcv.height;
+      const d = cmpcv.getContext('2d').getImageData(0, 0, W, H).data;
+      const ylw=(x,y)=>{const i=(y*W+x)*4;return d[i]>200&&d[i+1]>180&&d[i+2]<170&&d[i+3]>200;};
+      let h=0; for(let x=0;x<W;x++) if(ylw(x,Math.round(H/2))) h++;
+      let v=0; for(let y=0;y<H;y++) if(ylw(Math.round(W/2),y)) v++;
+      let L=0,R=0; for(let y=0;y<H;y++) for(let x=0;x<W;x++){const i=(y*W+x)*4;
+        if(d[i+3]>0){ if(x<W/2)L++; else R++; }}
+      return JSON.stringify({h,v,L,R,W,H}); })()""")
+    dv = json.loads(div)
+    chk('横画面: 左右分割(縦境界線)', dv['v'] > 0.8*dv['H'] and dv['h'] < 0.2*dv['W'], dv)
+    chk('横画面: 左=Reference/右=Sample描画', dv['L'] > 30000 and dv['R'] > 30000, dv)
     print(f'== {ok} PASS / {ng} NG ==')
 
 asyncio.run(main())

@@ -10,6 +10,10 @@ src = (root / 'app' / 'cxm-mobile.html').read_text(encoding='utf-8')
 MAP = [
     # HTML comments & labels
     ('<!-- 測定系(線分・角度) -->', '<!-- measurement (segment/angle) -->'),
+    ('/* 横画面: バー類を圧縮してstageの高さを確保 */', '/* Landscape: compress bars to keep stage height */'),
+    ('// 画面比率で分割方向を自動選択: 横画面=左右(Reference左/Sample右)、縦画面=上下', '// Auto-split by aspect: landscape=left/right (Ref left, Sample right), portrait=top/bottom'),
+    ('// 境界線(目立つ色)', '// Divider (prominent color)'),
+    ('// 差分ブロック: 同一サイズに縮小して比較、Sample側にマーク', '// Diff blocks: compare at same size, mark on Sample side'),
     ('<!-- 差異検出 -->', '<!-- difference detection -->'),
     ('<!-- タイムラプス -->', '<!-- time-lapse -->'),
     ('"カメラ切替"', '"Switch camera"'),

@@ -41,6 +41,18 @@
   #toast { position: fixed; left: 50%; bottom: 150px; transform: translateX(-50%); background: rgba(20,60,25,.95);
     border: 1px solid #58a860; color: #fff; padding: 10px 16px; border-radius: 10px; font-size: 13px;
     display: none; z-index: 50; max-width: 90vw; }
+  /* Landscape: compress bars to keep stage height */
+  @media (orientation: landscape) and (max-height: 560px) {
+    #top { padding: 3px 8px; gap: 6px; }
+    #ttl { font-size: 13px; }
+    #top button { min-height: 30px; padding: 4px 9px; font-size: 13px; }
+    #panel { padding: 4px 8px; gap: 6px; }
+    #panel button, .numin { min-height: 30px; font-size: 13px; padding: 3px 8px; }
+    #res { max-height: 12vh; }
+    #tabs { padding: 4px 8px calc(4px + env(safe-area-inset-bottom)); gap: 5px; }
+    #tabs button { min-height: 40px; font-size: 13px; }
+    #status { padding: 2px 8px; font-size: 10px; }
+  }
 </style>
 </head>
 <body>
@@ -92,7 +104,7 @@
 <input type="file" id="cmppicfile" accept="image/*" style="display:none">
 
 <script>
-const APP_VER = 'v1.0 (2026-11-24)';
+const APP_VER = 'v1.1 (2026-11-25)';
 $('ver').textContent = APP_VER;
 function $(id) { return document.getElementById(id); }
 const video = $('video'), fileimg = $('fileimg'), stage = $('stage'), overlay = $('overlay');
@@ -355,14 +367,24 @@ function cmpDraw() {
   const ctx = cmpcv.getContext('2d');
   const W = cmpcv.width, H = cmpcv.height;
   ctx.clearRect(0, 0, W, H);
-  const half = H / 2;
-  const fit = (cw, ch) => { const s = Math.min(W / cw, half / ch); return { w: cw * s, h: ch * s, x: (W - cw * s) / 2, y: (half - ch * s) / 2 }; };
-  const f1 = fit(cmpRef.width, cmpRef.height);
+  // Auto-split by aspect: landscape=left/right (Ref left, Sample right), portrait=top/bottom
+  const horiz = W > H;
+  const box = (i) => horiz ? { x: i * W / 2, y: 0, w: W / 2, h: H } : { x: 0, y: i * H / 2, w: W, h: H / 2 };
+  const fitIn = (b, iw, ih) => {
+    const s = Math.min(b.w / iw, b.h / ih);
+    return { w: iw * s, h: ih * s, x: b.x + (b.w - iw * s) / 2, y: b.y + (b.h - ih * s) / 2 };
+  };
+  const b0 = box(0), b1 = box(1);
+  const f1 = fitIn(b0, cmpRef.width, cmpRef.height);
   ctx.drawImage(cmpRef, f1.x, f1.y, f1.w, f1.h);
   const src = srcEl();
-  const f2 = fit(srcW(), srcH());
-  ctx.drawImage(src, f2.x, half + f2.y, f2.w, f2.h);
-  // diff blocks: compare at equal size
+  const f2 = fitIn(b1, srcW(), srcH());
+  ctx.drawImage(src, f2.x, f2.y, f2.w, f2.h);
+  // Divider (prominent color)
+  ctx.fillStyle = '#ffd76a';
+  if (horiz) ctx.fillRect(W / 2 - 1, 0, 2, H);
+  else ctx.fillRect(0, H / 2 - 1, W, 2);
+  // Diff blocks: compare at same size, mark on Sample side
   const n = 160, m = Math.max(2, Math.round(160 * cmpRef.height / cmpRef.width));
   const g1 = grab(cmpRef, n, m), g2 = grab(src, n, m);
   ctx.fillStyle = 'rgba(255,60,60,.45)';
@@ -370,10 +392,11 @@ function cmpDraw() {
   for (let y = 0; y < m; y++) for (let x = 0; x < n; x++) {
     const i = (y * n + x) * 3;
     const d = Math.max(Math.abs(g1[i] - g2[i]), Math.abs(g1[i+1] - g2[i+1]), Math.abs(g1[i+2] - g2[i+2]));
-    if (d >= cmpThr) ctx.fillRect(f2.x + x * bw, half + f2.y + y * bh, bw + 0.5, bh + 0.5);
+    if (d >= cmpThr) ctx.fillRect(f2.x + x * bw, f2.y + y * bh, bw + 0.5, bh + 0.5);
   }
   ctx.font = OFS + 'px monospace'; ctx.fillStyle = '#ffd76a';
-  ctx.fillText('Reference', 8, 20); ctx.fillText('Sample', 8, half + 20);
+  ctx.fillText('Reference', b0.x + 8, b0.y + 20);
+  ctx.fillText('Sample', b1.x + 8, b1.y + 20);
 }
 const grabC = document.createElement('canvas');
 function grab(el, w, h) {
